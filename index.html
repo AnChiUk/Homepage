@@ -2,32 +2,286 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>메인 페이지</title>
+    <title>Voxel World with LOD System</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; }
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
-            font-size: 18px;
-            color: white;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: sans-serif; }
+        #instructions {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; background: rgba(0,0,0,0.7); cursor: pointer; z-index: 100;
         }
-        .btn:hover { background-color: #0056b3; }
-        .btn-green { background-color: #28a745; }
-        .btn-green:hover { background-color: #218838; }
+        #ui { position: absolute; bottom: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h1>페이지 이동 메뉴</h1>
-    <p>아래 버튼을 누르면 해당 페이지로 이동합니다.</p>
+    <div id="instructions">
+        <h1>Voxel LOD System</h1>
+        <p>화면을 클릭하면 시작합니다</p>
+        <p><b>거리별 큐브 크기 변화</b>: 0.2 (근거리) → 0.4 → 0.8 (원거리)</p>
+        <p style="font-size: 0.9em; opacity: 0.8;"><b>WASD</b>: 이동 | <b>Space</b>: 점프</p>
+    </div>
+    <div id="ui">LOD Active</div>
 
-    <a href="index1.html" class="btn">Index 1 페이지로 이동</a>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "simplex-noise": "https://unpkg.com/simplex-noise@4.0.1/dist/esm/simplex-noise.js"
+            }
+        }
+    </script>
 
-    <a href="index2.html" class="btn btn-green">Index 2 페이지로 이동</a>
+    <script type="module">
+        import * as THREE from 'three';
+        import { createNoise2D } from 'simplex-noise';
+
+        // --- 환경 설정 ---
+        const CHUNK_PHYSICAL_SIZE = 4.0; // 한 청크의 물리적 가로세로 길이 (m)
+        const RENDER_DISTANCE = 6;      // 청크 렌더링 반경
+        const MAX_HEIGHT_UNITS = 12;
+
+        let scene, camera, renderer, player;
+        let leftArm, rightArm, leftLeg, rightLeg; 
+        
+        const noise2D = createNoise2D();
+        const chunks = new Map(); // Key: "x,z", Value: { mesh, lod }
+        const clock = new THREE.Clock();
+
+        let cameraYaw = 0, cameraPitch = 0.3, cameraDistance = 6;
+        const keys = { w: false, a: false, s: false, d: false, space: false };
+        let playerVelocity = new THREE.Vector3(), isGrounded = false, walkTime = 0;
+
+        // LOD 레벨별 재사용할 기하학적 데이터
+        const geometries = {
+            0: new THREE.BoxGeometry(0.2, 0.2, 0.2), // 근거리
+            1: new THREE.BoxGeometry(0.4, 0.4, 0.4), // 중거리
+            2: new THREE.BoxGeometry(0.8, 0.8, 0.8)  // 원거리
+        };
+        const boxMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+
+        init();
+
+        function createHumanoid() {
+            const group = new THREE.Group();
+            const matBody = new THREE.MeshStandardMaterial({ color: 0x3366cc });
+            const matHead = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
+            const matLegs = new THREE.MeshStandardMaterial({ color: 0x663300 });
+
+            const legGeo = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+            legGeo.translate(0, -0.3, 0);
+            leftLeg = new THREE.Mesh(legGeo, matLegs); leftLeg.position.set(-0.15, 0.6, 0); group.add(leftLeg);
+            rightLeg = new THREE.Mesh(legGeo, matLegs); rightLeg.position.set(0.15, 0.6, 0); group.add(rightLeg);
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), matBody); body.position.y = 0.9; group.add(body);
+
+            const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.2);
+            armGeo.translate(0, -0.3, 0);
+            leftArm = new THREE.Mesh(armGeo, matBody); leftArm.position.set(-0.35, 1.2, 0); group.add(leftArm);
+            rightArm = new THREE.Mesh(armGeo, matBody); rightArm.position.set(0.35, 1.2, 0); group.add(rightArm);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), matHead); head.position.y = 1.4; group.add(head);
+
+            group.traverse(child => { if (child.isMesh) child.castShadow = true; });
+            group.scale.set(0.6, 0.6, 0.6);
+            return group;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.04);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            player = createHumanoid();
+            player.position.set(0, 10, 0);
+            scene.add(player);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+            sun.position.set(50, 100, 50); sun.castShadow = true; scene.add(sun);
+
+            const instructions = document.getElementById('instructions');
+            instructions.addEventListener('click', () => { document.body.requestPointerLock(); });
+            document.addEventListener('pointerlockchange', () => {
+                instructions.style.display = (document.pointerLockElement === document.body) ? 'none' : 'flex';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === document.body) {
+                    cameraYaw -= e.movementX * 0.003;
+                    cameraPitch -= e.movementY * 0.003;
+                    cameraPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, cameraPitch));
+                }
+            });
+
+            window.addEventListener('keydown', (e) => { 
+                let key = e.code.replace('Key','').toLowerCase();
+                if(keys.hasOwnProperty(key)) keys[key] = true;
+                if(e.code === 'Space') keys.space = true;
+            });
+            window.addEventListener('keyup', (e) => { 
+                let key = e.code.replace('Key','').toLowerCase();
+                if(keys.hasOwnProperty(key)) keys[key] = false;
+                if(e.code === 'Space') keys.space = false;
+            });
+
+            animate();
+        }
+
+        // 지형 높이 계산 (LOD에 상관없이 절대 좌표 기준)
+        function getPhysicalHeight(x, z, blockSize) {
+            let h = (noise2D(x * 0.04, z * 0.04) + 1) / 2;
+            let physicalHeight = h * MAX_HEIGHT_UNITS;
+            // 각 LOD의 블록 크기에 맞춰 스냅 (계단 현상 유지)
+            return Math.floor(physicalHeight / blockSize) * blockSize;
+        }
+
+        // 특정 LOD 레벨로 청크 생성
+        function createLODChunk(cx, cz, lodLevel) {
+            const blockSize = [0.2, 0.4, 0.8][lodLevel];
+            const blocksPerRow = Math.round(CHUNK_PHYSICAL_SIZE / blockSize);
+            const count = blocksPerRow * blocksPerRow;
+
+            const instancedMesh = new THREE.InstancedMesh(geometries[lodLevel], boxMat, count);
+            const dummy = new THREE.Object3D();
+            const color = new THREE.Color();
+            let idx = 0;
+
+            const startX = cx * CHUNK_PHYSICAL_SIZE;
+            const startZ = cz * CHUNK_PHYSICAL_SIZE;
+
+            for (let x = 0; x < blocksPerRow; x++) {
+                for (let z = 0; z < blocksPerRow; z++) {
+                    const worldX = startX + x * blockSize + blockSize/2;
+                    const worldZ = startZ + z * blockSize + blockSize/2;
+                    const h = getPhysicalHeight(worldX, worldZ, blockSize);
+
+                    dummy.position.set(worldX, h, worldZ);
+                    dummy.updateMatrix();
+                    instancedMesh.setMatrixAt(idx, dummy.matrix);
+
+                    const relH = h / MAX_HEIGHT_UNITS;
+                    if (relH > 0.8) color.setHex(0xffffff);
+                    else if (relH > 0.4) color.setHex(0x3a9d23);
+                    else color.setHex(0xd2b48c);
+                    instancedMesh.setColorAt(idx, color);
+                    idx++;
+                }
+            }
+            scene.add(instancedMesh);
+            return instancedMesh;
+        }
+
+        function updateChunksLOD() {
+            const pCX = Math.floor(player.position.x / CHUNK_PHYSICAL_SIZE);
+            const pCZ = Math.floor(player.position.z / CHUNK_PHYSICAL_SIZE);
+
+            // 렌더링 범위 내 청크 확인
+            for (let x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++) {
+                for (let z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++) {
+                    const cx = pCX + x;
+                    const cz = pCZ + z;
+                    const key = `${cx},${cz}`;
+
+                    // 플레이어와 청크 중심 사이의 거리 계산
+                    const dist = Math.sqrt(x*x + z*z);
+                    let targetLOD = 0;
+                    if (dist > 4) targetLOD = 2;      // 먼 거리: 0.8 크기
+                    else if (dist > 2) targetLOD = 1; // 중간 거리: 0.4 크기
+                    else targetLOD = 0;               // 가까운 거리: 0.2 크기
+
+                    const existing = chunks.get(key);
+
+                    if (!existing) {
+                        // 새 청크 생성
+                        const mesh = createLODChunk(cx, cz, targetLOD);
+                        chunks.set(key, { mesh, lod: targetLOD });
+                    } else if (existing.lod !== targetLOD) {
+                        // LOD 변경 필요 시 기존 것 삭제 후 재생성
+                        scene.remove(existing.mesh);
+                        existing.mesh.dispose();
+                        const mesh = createLODChunk(cx, cz, targetLOD);
+                        chunks.set(key, { mesh, lod: targetLOD });
+                    }
+                }
+            }
+
+            // 너무 멀어진 청크 정리 (메모리 관리)
+            for (const [key, value] of chunks.entries()) {
+                const [cx, cz] = key.split(',').map(Number);
+                if (Math.abs(cx - pCX) > RENDER_DISTANCE + 1 || Math.abs(cz - pCZ) > RENDER_DISTANCE + 1) {
+                    scene.remove(value.mesh);
+                    value.mesh.dispose();
+                    chunks.delete(key);
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            if (document.pointerLockElement === document.body) {
+                const moveSpeed = 8 * delta;
+                const forward = new THREE.Vector3(Math.sin(cameraYaw), 0, Math.cos(cameraYaw));
+                const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), forward);
+
+                let moveDir = new THREE.Vector3(0, 0, 0);
+                if (keys.w) moveDir.sub(forward); if (keys.s) moveDir.add(forward);
+                if (keys.a) moveDir.sub(right); if (keys.d) moveDir.add(right);
+
+                const isMoving = moveDir.length() > 0;
+                if (isMoving) {
+                    moveDir.normalize();
+                    const nextPos = player.position.clone().addScaledVector(moveDir, moveSpeed);
+                    const nextH = getPhysicalHeight(nextPos.x, nextPos.z, 0.2); 
+                    if (nextH <= player.position.y + 0.3) {
+                        player.position.x = nextPos.x; player.position.z = nextPos.z;
+                    }
+                    player.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+                }
+
+                const currentFloorH = getPhysicalHeight(player.position.x, player.position.z, 0.2);
+                playerVelocity.y -= 25 * delta;
+                player.position.y += playerVelocity.y * delta;
+                if (player.position.y <= currentFloorH) {
+                    player.position.y = currentFloorH; playerVelocity.y = 0; isGrounded = true;
+                } else isGrounded = false;
+
+                if (keys.space && isGrounded) { playerVelocity.y = 9; isGrounded = false; }
+
+                // 애니메이션
+                if (isGrounded && isMoving) {
+                    walkTime += delta * 12;
+                    const swing = 0.5;
+                    leftLeg.rotation.x = Math.sin(walkTime) * swing; rightLeg.rotation.x = -Math.sin(walkTime) * swing;
+                    leftArm.rotation.x = -Math.sin(walkTime) * swing; rightArm.rotation.x = Math.sin(walkTime) * swing;
+                }
+
+                // 카메라 제어 (지면 충돌 방지)
+                const offX = cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
+                const offY = cameraDistance * Math.sin(cameraPitch);
+                const offZ = cameraDistance * Math.cos(cameraYaw) * Math.cos(cameraPitch);
+                let tX = player.position.x + offX, tY = player.position.y + 0.8 + offY, tZ = player.position.z + offZ;
+                const camH = getPhysicalHeight(tX, tZ, 0.2) + 0.5;
+                if (tY < camH) tY = camH;
+                camera.position.set(tX, tY, tZ); camera.lookAt(player.position.x, player.position.y + 0.6, player.position.z);
+
+                updateChunksLOD();
+                document.getElementById('ui').innerText = `LOD: Active | Pos: ${player.position.x.toFixed(1)}, ${player.position.z.toFixed(1)}`;
+            }
+            renderer.render(scene, camera);
+        }
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
 </body>
 </html>
