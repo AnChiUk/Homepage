@@ -11,9 +11,25 @@
             color: white; background: rgba(0,0,0,0.7); cursor: pointer; z-index: 100;
         }
         #ui { position: absolute; bottom: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; font-size: 14px; }
+		.back-to-index {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 1001; /* instructions보다 위에 위치 */
+			padding: 10px 20px;
+			background-color: rgba(0, 0, 0, 0.6);
+			color: white;
+			text-decoration: none;
+			border-radius: 5px;
+			font-weight: bold;
+			border: 1px solid white;
+			transition: background 0.3s;
+		}
+		.back-to-index:hover { background-color: rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body>
+	<a href="index.html" class="back-to-index">홈으로 돌아가기</a>
     <div id="instructions">
         <h1>Voxel LOD System</h1>
         <p>화면을 클릭하면 시작합니다</p>
