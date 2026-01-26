@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국가시설 프로젝트 보안 준거성 점검</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 40px auto; padding: 0 20px; background-color: #f8f9fa; }
+        h1 { color: #004a99; border-bottom: 3px solid #004a99; padding-bottom: 10px; }
+        .info-box { background: #e7f3ff; padding: 15px; border-left: 5px solid #004a99; margin-bottom: 30px; border-radius: 4px; }
+        .progress-container { position: sticky; top: 10px; background: white; padding: 15px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; margin-bottom: 20px; }
+        .progress-bar { height: 20px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: #28a745; width: 0%; transition: width 0.3s; }
+        .category { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .category h2 { margin-top: 0; color: #444; font-size: 1.25rem; border-left: 4px solid #6c757d; padding-left: 10px; }
+        .check-item { display: flex; align-items: flex-start; margin: 12px 0; cursor: pointer; }
+        .check-item input { margin-top: 5px; margin-right: 12px; transform: scale(1.2); }
+        .check-text { flex: 1; }
+        .check-text strong { display: block; color: #000; }
+        .check-text span { font-size: 0.9em; color: #666; }
+        .warning { color: #d9534f; font-weight: bold; font-size: 0.9em; margin-top: 4px; display: block; }
+    </style>
+</head>
+<body>
+
+    <h1>국가 보안시설 디지털 트윈 보안 점검</h1>
+    
+    <div class="info-box">
+        <strong>💡 설계 원칙:</strong> "데이터는 내부에, 서비스는 외부에." <br>
+        서버-DB 직결은 금지됩니다. 반드시 중계 서버(API)와 망간 자료전송 구간을 설계하세요.
+    </div>
+
+    <div class="progress-container">
+        <strong>전체 점검 진행률: <span id="percent">0%</span></strong>
+        <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+    </div>
+
+    <div class="category">
+        <h2>1. 네트워크 및 시스템 아키텍처</h2>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>망 분리(Internal/External) 설계 준수</strong>
+                <span>내부망과 인터넷망이 물리적 또는 논리적으로 분리되었는가?</span>
+            </div>
+        </label>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>DB 서버 보안 구역 배치</strong>
+                <span>DB가 외부 접근이 불가능한 내부망(Private Zone)에 위치하는가?</span>
+                <span class="warning">※ 외부망 직결 금지 (이번 프로젝트 주요 지적 사항)</span>
+            </div>
+        </label>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>망간 자료전송 솔루션 도입</strong>
+                <span>외부-내부망 간 데이터 연동 시 전용 게이트웨이를 통과하는가?</span>
+            </div>
+        </label>
+    </div>
+
+    <div class="category">
+        <h2>2. 데이터 및 공간정보 보안</h2>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>공간정보 비식별화</strong>
+                <span>정밀 3D 데이터 내 보안시설 마스킹 처리가 계획되었는가?</span>
+            </div>
+        </label>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>KCMVP 암호모듈 사용</strong>
+                <span>국정원 검증 필 암호모듈을 통해 DB를 암호화했는가?</span>
+            </div>
+        </label>
+    </div>
+
+    <div class="category">
+        <h2>3. 접근 제어 및 계정 관리</h2>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>관리자 2단계 인증(2FA)</strong>
+                <span>관리자 페이지 접속 시 추가 인증 수단이 존재하는가?</span>
+            </div>
+        </label>
+        <label class="check-item">
+            <input type="checkbox" class="chk">
+            <div class="check-text">
+                <strong>접속 로그 보존</strong>
+                <span>최소 6개월 이상의 감사 로그 보관 설계를 마쳤는가?</span>
+            </div>
+        </label>
+    </div>
+
+    <script>
+        const checkboxes = document.querySelectorAll('.chk');
+        const fill = document.getElementById('fill');
+        const percent = document.getElementById('percent');
+
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const checkedCount = document.querySelectorAll('.chk:checked').length;
+                const totalCount = checkboxes.length;
+                const progress = Math.round((checkedCount / totalCount) * 100);
+                
+                fill.style.width = progress + '%';
+                percent.innerText = progress + '%';
+            });
+        });
+    </script>
+</body>
+</html>
