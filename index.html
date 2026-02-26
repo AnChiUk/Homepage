@@ -26,7 +26,6 @@
             transition: all 0.3s ease;
         }
 
-        /* 다국어 제어 CSS */
         body.en [lang="ko"] { display: none !important; }
         body.ko [lang="en"] { display: none !important; }
 
@@ -37,7 +36,7 @@
             position: relative;
         }
 
-        /* 언어 전환 버튼 스타일 */
+        /* 데스크탑: 우측 상단 고정 */
         .lang-switch {
             position: absolute;
             top: 2rem;
@@ -48,6 +47,7 @@
             padding: 5px;
             border-radius: 4px;
             border: 1px solid var(--border-color);
+            z-index: 10;
         }
 
         .lang-switch button {
@@ -182,16 +182,34 @@
             font-size: 0.9rem;
         }
         
-        /* 모바일 대응 */
+        /* [수정됨] 모바일 반응형 대응 완벽 적용 */
         @media (max-width: 768px) {
+            header {
+                padding: 2rem 1rem; /* 여백 축소 */
+            }
             .lang-switch {
-                top: 1rem;
-                right: 1rem;
+                position: relative; /* 절대 위치 해제 (겹침 방지) */
+                top: 0;
+                right: 0;
+                justify-content: center;
+                margin: 0 auto 1.5rem auto; /* 제목 위쪽 중앙에 배치 */
+                width: max-content;
+            }
+            h1 {
+                font-size: 1.7rem; /* 모바일에서 제목 크기 축소 */
+            }
+            .subtitle {
+                font-size: 1rem;
+            }
+            .container {
+                padding: 0 1rem;
             }
         }
     </style>
 </head>
-<body class="ko"> <header>
+<body class="ko"> 
+
+    <header>
         <div class="container" style="margin: 0 auto;">
             <div class="lang-switch">
                 <button id="btn-ko" class="active" onclick="setLanguage('ko')">KO</button>
@@ -240,28 +258,24 @@
             <div class="card">
                 <h3 lang="ko">고정 격자 기반 정보 전달</h3>
                 <h3 lang="en">Fixed Grid-Based Information Transfer</h3>
-                
                 <p lang="ko">입자의 물리적 이동을 모사하는 대신, 3차원 공간에 배열된 고정 에테르 셀(Cell) 간의 '에너지' 및 '운동량(Velocity)' 데이터 교환을 통해 파동의 전파를 모델링합니다.</p>
                 <p lang="en">Instead of simulating the physical movement of particles, it models wave propagation through the exchange of 'energy' and 'velocity' data between fixed 3D ether cells arranged in space.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">벡터 상쇄 및 질량 축적</h3>
                 <h3 lang="en">Vector Cancellation & Mass Accumulation</h3>
-                
                 <p lang="ko">상반된 방향의 운동량 벡터 충돌 시 연산 결과는 0으로 상쇄됩니다. 이때 소실된 운동 에너지는 해당 좌표에 스칼라 값(질량)으로 축적되며, 임계 압력 도달 후 잔여 벡터 방향으로 재확산됩니다.</p>
                 <p lang="en">When opposite momentum vectors collide, they mathematically cancel out to zero. The lost kinetic energy accumulates as a scalar value (mass) at that coordinate, and re-diffuses in the direction of the residual vector upon reaching threshold pressure.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">양자화된 지향성 방출</h3>
                 <h3 lang="en">Quantized Directional Emission</h3>
-                
                 <p lang="ko">에너지가 연속적으로 분산되지 않으며, 주변 벡터 조건에 의해 특정 방향으로 누적된 에너지가 설정된 임계 방출량(Constant Output)에 도달한 경우에만 불연속적인 덩어리(양자) 형태로 방출됩니다.</p>
                 <p lang="en">Energy does not disperse continuously. It is emitted as a discrete clump (quantum) only when the accumulated energy in a specific direction reaches the set Constant Output threshold based on surrounding vector conditions.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">닫힌 계(Closed System) 모델링</h3>
                 <h3 lang="en">Closed System Modeling</h3>
-                
                 <p lang="ko">에테르 매질의 마찰 계수를 0으로 설정하고, 경계면에서의 완벽한 탄성 충돌을 적용했습니다. 이를 통해 계 전체의 총 에너지가 소실 없이 보존되며 정상파(Standing Wave)가 형성되도록 설계했습니다.</p>
                 <p lang="en">The ether medium's friction coefficient is set to 0, and perfect elastic collisions are applied at the boundaries. This ensures the total energy of the system is conserved without loss, allowing the formation of standing waves.</p>
             </div>
@@ -277,21 +291,18 @@
             <div class="card">
                 <h3 lang="ko">Compute Shader 기반 GPGPU 연산</h3>
                 <h3 lang="en">Compute Shader-Based GPGPU</h3>
-                
                 <p lang="ko">CPU의 개입을 배제하고 GPU의 스트림 프로세서를 활용해 물리 연산을 수행합니다. 각 데이터 셀이 이웃한 셀의 상태를 참조하여 물리량을 갱신하는 과정을 병렬 처리합니다.</p>
                 <p lang="en">CPU intervention is entirely bypassed, utilizing thousands of GPU stream processors for physics calculations. The process of each data cell referencing neighboring states to update physical quantities is processed in parallel.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">Texture3D 및 더블 버퍼링</h3>
                 <h3 lang="en">Texture3D & Double Buffering</h3>
-                
                 <p lang="ko">ARGBFloat 포맷의 3D 텍스처를 사용하여 에너지(R)와 3차원 운동량(G, B, A)을 관리합니다. Read 버퍼와 Write 버퍼를 매 프레임 교체(Swap)하여 데이터 동시 접근에 의한 충돌을 방지합니다.</p>
                 <p lang="en">ARGBFloat format 3D textures are used to manage energy (R) and 3D momentum (G, B, A). Read and Write buffers are swapped every frame to prevent data collisions caused by simultaneous access.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">절차적(Procedural) 파티클 렌더링</h3>
                 <h3 lang="en">Procedural Particle Rendering</h3>
-                
                 <p lang="ko">GameObject 인스턴스화 오버헤드를 제거하고, Graphics.DrawProceduralNow 메서드를 사용하여 GPU 버퍼에 렌더링 명령을 직접 전달하는 방식으로 그리기 성능을 최적화했습니다.</p>
                 <p lang="en">GameObject instantiation overhead is removed, significantly optimizing rendering performance by directly dispatching rendering commands to the GPU buffer using the Graphics.DrawProceduralNow method.</p>
             </div>
@@ -307,21 +318,18 @@
             <div class="card">
                 <h3 lang="ko">임계값 기반 렌더링 차단 (Culling)</h3>
                 <h3 lang="en">Threshold-Based Culling</h3>
-                
                 <p lang="ko">에너지 밀도가 설정된 기준치(Threshold) 미만인 셀의 렌더링을 차단(Alpha 0)합니다. 이를 통해 시각적 노이즈를 제거하고 에너지 전달의 최전선(Event Horizon) 구조를 명확히 출력합니다.</p>
                 <p lang="en">Rendering is disabled (Alpha 0) for cells with energy density below the set Threshold. This effectively removes visual noise and clearly delineates the structure of the energy transfer's Event Horizon.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">공간 왜곡 (Gravitational Lensing) 연산</h3>
                 <h3 lang="en">Gravitational Lensing Effect</h3>
-                
                 <p lang="ko">Vertex Shader 단계에서 주변 에너지 밀도의 그래디언트(Gradient)를 연산하여 렌더링 좌표를 질량 중심으로 편향시킵니다. 거대 질량 주변의 중력 렌즈 현상을 시각적으로 시뮬레이션합니다.</p>
                 <p lang="en">In the Vertex Shader stage, the gradient of the surrounding energy density is computed to bias the rendering coordinates toward the center of mass, visually simulating the gravitational lensing effect around massive objects.</p>
             </div>
             <div class="card">
                 <h3 lang="ko">특이점 구현 및 단면(Cross-Section) 분석</h3>
                 <h3 lang="en">Singularity & Cross-Section Analysis</h3>
-                
                 <p lang="ko">초고밀도 임계점을 초과한 좌표는 후면의 빛을 차단하는 흑체(Black Body)로 렌더링합니다. 중심부 관측을 위해 Z축 기준 렌더링 클리핑(Clipping)을 적용해 내부 단면과 강착 원반의 구조를 파악할 수 있도록 구성했습니다.</p>
                 <p lang="en">Coordinates exceeding the super-density threshold are rendered as Black Bodies blocking background light. Z-axis rendering clipping is applied to expose the core, allowing structural analysis of the internal cross-section and accretion disk.</p>
             </div>
@@ -338,10 +346,7 @@
 
     <script>
         function setLanguage(lang) {
-            // body 태그의 클래스를 변경 (ko 또는 en)
             document.body.className = lang;
-            
-            // 버튼 활성화 상태 변경
             document.getElementById('btn-ko').classList.remove('active');
             document.getElementById('btn-en').classList.remove('active');
             document.getElementById('btn-' + lang).classList.add('active');
