@@ -36,6 +36,23 @@
             position: relative;
         }
 
+        /* [추가됨] 뒤로 가기 버튼 스타일 */
+        .back-btn {
+            position: absolute;
+            top: 2.3rem;
+            left: 2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
+            z-index: 10;
+        }
+
+        .back-btn:hover {
+            color: var(--highlight);
+        }
+
         /* 데스크탑: 우측 상단 고정 */
         .lang-switch {
             position: absolute;
@@ -71,12 +88,14 @@
             font-size: 2.2rem;
             margin: 0;
             font-weight: 600;
+            text-align: center; /* 전체적인 균형을 위해 중앙 정렬 추가 */
         }
 
         .subtitle {
             font-size: 1.1rem;
             margin-top: 8px;
             color: var(--text-muted);
+            text-align: center;
         }
 
         .container {
@@ -182,21 +201,27 @@
             font-size: 0.9rem;
         }
         
-        /* [수정됨] 모바일 반응형 대응 완벽 적용 */
+        /* 모바일 반응형 대응 완벽 적용 */
         @media (max-width: 768px) {
             header {
-                padding: 2rem 1rem; /* 여백 축소 */
+                padding: 2rem 1rem; 
+            }
+            /* [수정됨] 모바일에서 버튼들이 겹치지 않게 가로 정렬 */
+            .top-controls {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+            }
+            .back-btn, .lang-switch {
+                position: static; /* 절대 위치 해제 */
+                margin: 0;
             }
             .lang-switch {
-                position: relative; /* 절대 위치 해제 (겹침 방지) */
-                top: 0;
-                right: 0;
-                justify-content: center;
-                margin: 0 auto 1.5rem auto; /* 제목 위쪽 중앙에 배치 */
                 width: max-content;
             }
             h1 {
-                font-size: 1.7rem; /* 모바일에서 제목 크기 축소 */
+                font-size: 1.7rem; 
             }
             .subtitle {
                 font-size: 1rem;
@@ -210,10 +235,18 @@
 <body class="ko"> 
 
     <header>
-        <div class="container" style="margin: 0 auto;">
-            <div class="lang-switch">
-                <button id="btn-ko" class="active" onclick="setLanguage('ko')">KO</button>
-                <button id="btn-en" onclick="setLanguage('en')">EN</button>
+        <div class="container" style="margin: 0 auto; padding-top: 0;">
+            
+            <div class="top-controls">
+                <a href="index.html" class="back-btn">
+                    <span lang="ko">← 목록으로</span>
+                    <span lang="en">← Back</span>
+                </a>
+
+                <div class="lang-switch">
+                    <button id="btn-ko" class="active" onclick="setLanguage('ko')">KO</button>
+                    <button id="btn-en" onclick="setLanguage('en')">EN</button>
+                </div>
             </div>
 
             <h1 lang="ko">3D 에테르 역학 시뮬레이션 결과 보고서</h1>
