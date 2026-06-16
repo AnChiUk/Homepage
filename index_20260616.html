@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>WebGPU Ether Physics Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; color: white; font-family: sans-serif; }
+        #info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="info">WebGPU 초기화 중...</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
+                "three/webgpu": "https://unpkg.com/three@0.164.0/examples/jsm/renderers/webgpu/index.js",
+                "three/tsl": "https://unpkg.com/three@0.164.0/examples/jsm/nodes/index.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import WebGPURenderer from 'three/webgpu';
+
+        // 1. WebGPU 지원 여부 확인
+        if (!navigator.gpu) {
+            document.getElementById('info').innerText = "WebGPU를 지원하지 않는 브라우저입니다. 최신 크롬(Chrome)이나 엣지(Edge)를 사용해주세요.";
+            throw new Error("WebGPU not supported");
+        }
+
+        async function init() {
+            const infoEl = document.getElementById('info');
+            infoEl.innerText = "물리 엔진 (WebGPU) 준비 완료!";
+
+            // ---------------------------------------------------------
+            // 2. 물리 상수 및 해상도 설정
+            // ---------------------------------------------------------
+            const RESOLUTION = 128; // 128x128x128 격자
+            const TOTAL_CELLS = RESOLUTION * RESOLUTION * RESOLUTION;
+            
+            // WGSL(WebGPU Shading Language)로 번역된 선생님의 CSInit 코드
+            const csInitShaderCode = `
+                // 에테르 상태를 저장할 거대한 1차원 배열 (x, y, z를 곱해서 쫙 핀 상태)
+                // x, y, z, w = Load, VelX, VelY, VelZ 역할을 합니다.
+                @group(0) @binding(0) var<storage, read_write> etherGrid : array<vec4<f32>>;
+
+                // 유니티의 Constant Buffer 역할을 하는 변수들
+                struct PhysicsParams {
+                    resolution: f32,
+                    initialEnergy: f32,
+                    singularityRadius: f32,
+                };
+                @group(0) @binding(1) var<uniform> params : PhysicsParams;
+
+                // 유니티의 [numthreads(8,8,8)]과 동일
+                @compute @workgroup_size(8, 8, 8)
+                fn main(@builtin(global_invocation_id) id : vec3<u32>) {
+                    let res = u32(params.resolution);
+                    
+                    // 범위 초과 시 연산 중단 (안전장치)
+                    if (id.x >= res || id.y >= res || id.z >= res) {
+                        return;
+                    }
+
+                    // 1D 인덱스 계산 (3D 좌표 -> 1D 배열 위치)
+                    let index = id.x + (id.y * res) + (id.z * res * res);
+
+                    // 완벽한 정중앙 좌표 계산
+                    let centerCoord = (params.resolution - 1.0) / 2.0;
+                    let center = vec3<f32>(centerCoord, centerCoord, centerCoord);
+                    let currentPos = vec3<f32>(f32(id.x), f32(id.y), f32(id.z));
+
+                    // 중심으로부터의 거리 계산
+                    let dist = distance(currentPos, center);
+
+                    // 빅뱅 중심부에 에너지 주입
+                    if (dist <= params.singularityRadius) {
+                        etherGrid[index] = vec4<f32>(params.initialEnergy, 0.0, 0.0, 0.0);
+                    } else {
+                        etherGrid[index] = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+                    }
+                }
+            `;
+
+            console.log("CSInit Shader 준비 완료:");
+            console.log(csInitShaderCode);
+            
+            // =========================================================
+            // 향후 추가될 내용:
+            // 1. WebGPU 디바이스 생성 및 버퍼(메모리) 할당
+            // 2. CSInit 쉐이더 실행 (빅뱅 세팅)
+            // 3. CSMain 쉐이더 실행 (매 프레임 확산 연산)
+            // 4. Three.js 포인트 렌더링 (화면에 그리기)
+            // =========================================================
+        }
+
+        init();
+    </script>
+</body>
+</html>

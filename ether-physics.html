@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>Ether Physics 3D Simulation Report</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --highlight: #64b5f6;
+            --secondary: #4f5b62;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        body.en [lang="ko"] { display: none !important; }
+        body.ko [lang="en"] { display: none !important; }
+
+        header {
+            background-color: var(--container-bg);
+            padding: 3rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        /* 데스크탑: 우측 상단 고정 */
+        .lang-switch {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 5px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .lang-switch button {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .lang-switch button.active {
+            background: var(--highlight);
+            color: #121212;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 2.2rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            margin-top: 8px;
+            color: var(--text-muted);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            border-radius: 4px;
+            margin: 1.5rem 0 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .youtube-btn-wrapper {
+            text-align: right;
+            margin-bottom: 3rem;
+        }
+
+        .youtube-btn {
+            display: inline-block;
+            background-color: #282828;
+            color: #e0e0e0;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .youtube-btn:hover {
+            background-color: #383838;
+            color: #ffffff;
+            border-color: var(--highlight);
+        }
+
+        .section-title {
+            color: var(--highlight);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 3rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--container-bg);
+            padding: 1.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h3 {
+            color: var(--highlight);
+            margin-top: 0;
+            font-size: 1.1rem;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            margin-bottom: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+            background-color: var(--container-bg);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        /* [수정됨] 모바일 반응형 대응 완벽 적용 */
+        @media (max-width: 768px) {
+            header {
+                padding: 2rem 1rem; /* 여백 축소 */
+            }
+            .lang-switch {
+                position: relative; /* 절대 위치 해제 (겹침 방지) */
+                top: 0;
+                right: 0;
+                justify-content: center;
+                margin: 0 auto 1.5rem auto; /* 제목 위쪽 중앙에 배치 */
+                width: max-content;
+            }
+            h1 {
+                font-size: 1.7rem; /* 모바일에서 제목 크기 축소 */
+            }
+            .subtitle {
+                font-size: 1rem;
+            }
+            .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="ko"> 
+
+    <header>
+        <div class="container" style="margin: 0 auto;">
+            <div class="lang-switch">
+                <button id="btn-ko" class="active" onclick="setLanguage('ko')">KO</button>
+                <button id="btn-en" onclick="setLanguage('en')">EN</button>
+            </div>
+
+            <h1 lang="ko">3D 에테르 역학 시뮬레이션 결과 보고서</h1>
+            <h1 lang="en">3D Ether Physics Simulation Report</h1>
+            
+            <div class="subtitle" lang="ko">격자 모델 기반의 파동 및 물리 연산 엔진 구현 기술서</div>
+            <div class="subtitle" lang="en">Technical Specification for Grid-Based Wave and Physics Computation Engine</div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <h2 class="section-title" style="margin-top: 1rem;" lang="ko">1. 시뮬레이션 구동 시연</h2>
+        <h2 class="section-title" style="margin-top: 1rem;" lang="en">1. Simulation Demo</h2>
+        
+        <div class="video-container">
+            <iframe 
+                src="https://www.youtube-nocookie.com/embed/gPG1yliAPno?rel=0" 
+                title="Ether Physics 3D Simulation Demo" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+            </iframe>
+        </div>
+        
+        <div class="youtube-btn-wrapper">
+            <a href="https://youtu.be/gPG1yliAPno" target="_blank" class="youtube-btn" lang="ko">
+                ▶ YouTube에서 원본 영상 보기
+            </a>
+            <a href="https://youtu.be/gPG1yliAPno" target="_blank" class="youtube-btn" lang="en">
+                ▶ Watch Original Video on YouTube
+            </a>
+        </div>
+
+        <h2 class="section-title" lang="ko">2. 핵심 물리 이론</h2>
+        <h2 class="section-title" lang="en">2. Core Physics Theory</h2>
+        
+        <p class="section-desc" lang="ko">본 시뮬레이션은 고정된 에테르 격자(Ether Grid) 모델을 기반으로 파동 전파, 질량 축적, 지향성 방출 등 주요 물리 현상을 연산하는 커스텀 물리 엔진입니다.</p>
+        <p class="section-desc" lang="en">This simulation is a custom physics engine that computes key physical phenomena such as wave propagation, mass accumulation, and directional emission based on a fixed Ether Grid model.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3 lang="ko">고정 격자 기반 정보 전달</h3>
+                <h3 lang="en">Fixed Grid-Based Information Transfer</h3>
+                <p lang="ko">입자의 물리적 이동을 모사하는 대신, 3차원 공간에 배열된 고정 에테르 셀(Cell) 간의 '에너지' 및 '운동량(Velocity)' 데이터 교환을 통해 파동의 전파를 모델링합니다.</p>
+                <p lang="en">Instead of simulating the physical movement of particles, it models wave propagation through the exchange of 'energy' and 'velocity' data between fixed 3D ether cells arranged in space.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">벡터 상쇄 및 질량 축적</h3>
+                <h3 lang="en">Vector Cancellation & Mass Accumulation</h3>
+                <p lang="ko">상반된 방향의 운동량 벡터 충돌 시 연산 결과는 0으로 상쇄됩니다. 이때 소실된 운동 에너지는 해당 좌표에 스칼라 값(질량)으로 축적되며, 임계 압력 도달 후 잔여 벡터 방향으로 재확산됩니다.</p>
+                <p lang="en">When opposite momentum vectors collide, they mathematically cancel out to zero. The lost kinetic energy accumulates as a scalar value (mass) at that coordinate, and re-diffuses in the direction of the residual vector upon reaching threshold pressure.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">양자화된 지향성 방출</h3>
+                <h3 lang="en">Quantized Directional Emission</h3>
+                <p lang="ko">에너지가 연속적으로 분산되지 않으며, 주변 벡터 조건에 의해 특정 방향으로 누적된 에너지가 설정된 임계 방출량(Constant Output)에 도달한 경우에만 불연속적인 덩어리(양자) 형태로 방출됩니다.</p>
+                <p lang="en">Energy does not disperse continuously. It is emitted as a discrete clump (quantum) only when the accumulated energy in a specific direction reaches the set Constant Output threshold based on surrounding vector conditions.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">닫힌 계(Closed System) 모델링</h3>
+                <h3 lang="en">Closed System Modeling</h3>
+                <p lang="ko">에테르 매질의 마찰 계수를 0으로 설정하고, 경계면에서의 완벽한 탄성 충돌을 적용했습니다. 이를 통해 계 전체의 총 에너지가 소실 없이 보존되며 정상파(Standing Wave)가 형성되도록 설계했습니다.</p>
+                <p lang="en">The ether medium's friction coefficient is set to 0, and perfect elastic collisions are applied at the boundaries. This ensures the total energy of the system is conserved without loss, allowing the formation of standing waves.</p>
+            </div>
+        </div>
+
+        <h2 class="section-title" lang="ko">3. 시스템 아키텍처</h2>
+        <h2 class="section-title" lang="en">3. System Architecture</h2>
+        
+        <p class="section-desc" lang="ko">초당 60프레임 환경에서 약 200만 개(128³)의 데이터를 실시간 연산하기 위해 적용된 GPU 병렬 처리 구조입니다.</p>
+        <p class="section-desc" lang="en">A GPU parallel processing architecture implemented to compute approximately 2 million (128³) data points in real-time at 60 FPS.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3 lang="ko">Compute Shader 기반 GPGPU 연산</h3>
+                <h3 lang="en">Compute Shader-Based GPGPU</h3>
+                <p lang="ko">CPU의 개입을 배제하고 GPU의 스트림 프로세서를 활용해 물리 연산을 수행합니다. 각 데이터 셀이 이웃한 셀의 상태를 참조하여 물리량을 갱신하는 과정을 병렬 처리합니다.</p>
+                <p lang="en">CPU intervention is entirely bypassed, utilizing thousands of GPU stream processors for physics calculations. The process of each data cell referencing neighboring states to update physical quantities is processed in parallel.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">Texture3D 및 더블 버퍼링</h3>
+                <h3 lang="en">Texture3D & Double Buffering</h3>
+                <p lang="ko">ARGBFloat 포맷의 3D 텍스처를 사용하여 에너지(R)와 3차원 운동량(G, B, A)을 관리합니다. Read 버퍼와 Write 버퍼를 매 프레임 교체(Swap)하여 데이터 동시 접근에 의한 충돌을 방지합니다.</p>
+                <p lang="en">ARGBFloat format 3D textures are used to manage energy (R) and 3D momentum (G, B, A). Read and Write buffers are swapped every frame to prevent data collisions caused by simultaneous access.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">절차적(Procedural) 파티클 렌더링</h3>
+                <h3 lang="en">Procedural Particle Rendering</h3>
+                <p lang="ko">GameObject 인스턴스화 오버헤드를 제거하고, Graphics.DrawProceduralNow 메서드를 사용하여 GPU 버퍼에 렌더링 명령을 직접 전달하는 방식으로 그리기 성능을 최적화했습니다.</p>
+                <p lang="en">GameObject instantiation overhead is removed, significantly optimizing rendering performance by directly dispatching rendering commands to the GPU buffer using the Graphics.DrawProceduralNow method.</p>
+            </div>
+        </div>
+
+        <h2 class="section-title" lang="ko">4. 데이터 시각화 기법</h2>
+        <h2 class="section-title" lang="en">4. Data Visualization Techniques</h2>
+        
+        <p class="section-desc" lang="ko">물리 연산 결과를 직관적으로 분석하고 관측하기 위해 파티클 쉐이더(Particle Shader)에 적용된 처리 기법입니다.</p>
+        <p class="section-desc" lang="en">Advanced processing techniques applied to the Particle Shader to intuitively analyze and observe the physical computation results.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3 lang="ko">임계값 기반 렌더링 차단 (Culling)</h3>
+                <h3 lang="en">Threshold-Based Culling</h3>
+                <p lang="ko">에너지 밀도가 설정된 기준치(Threshold) 미만인 셀의 렌더링을 차단(Alpha 0)합니다. 이를 통해 시각적 노이즈를 제거하고 에너지 전달의 최전선(Event Horizon) 구조를 명확히 출력합니다.</p>
+                <p lang="en">Rendering is disabled (Alpha 0) for cells with energy density below the set Threshold. This effectively removes visual noise and clearly delineates the structure of the energy transfer's Event Horizon.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">공간 왜곡 (Gravitational Lensing) 연산</h3>
+                <h3 lang="en">Gravitational Lensing Effect</h3>
+                <p lang="ko">Vertex Shader 단계에서 주변 에너지 밀도의 그래디언트(Gradient)를 연산하여 렌더링 좌표를 질량 중심으로 편향시킵니다. 거대 질량 주변의 중력 렌즈 현상을 시각적으로 시뮬레이션합니다.</p>
+                <p lang="en">In the Vertex Shader stage, the gradient of the surrounding energy density is computed to bias the rendering coordinates toward the center of mass, visually simulating the gravitational lensing effect around massive objects.</p>
+            </div>
+            <div class="card">
+                <h3 lang="ko">특이점 구현 및 단면(Cross-Section) 분석</h3>
+                <h3 lang="en">Singularity & Cross-Section Analysis</h3>
+                <p lang="ko">초고밀도 임계점을 초과한 좌표는 후면의 빛을 차단하는 흑체(Black Body)로 렌더링합니다. 중심부 관측을 위해 Z축 기준 렌더링 클리핑(Clipping)을 적용해 내부 단면과 강착 원반의 구조를 파악할 수 있도록 구성했습니다.</p>
+                <p lang="en">Coordinates exceeding the super-density threshold are rendered as Black Bodies blocking background light. Z-axis rendering clipping is applied to expose the core, allowing structural analysis of the internal cross-section and accretion disk.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>
+            <strong lang="ko">기술 설계 및 시뮬레이션 구현 보고서</strong>
+            <strong lang="en">Technical Design and Simulation Implementation Report</strong>
+        </p>
+        <p>Ether Physics Engine Development Project</p>
+    </footer>
+
+    <script>
+        function setLanguage(lang) {
+            document.body.className = lang;
+            document.getElementById('btn-ko').classList.remove('active');
+            document.getElementById('btn-en').classList.remove('active');
+            document.getElementById('btn-' + lang).classList.add('active');
+        }
+    </script>
+</body>
+</html>
