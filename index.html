@@ -1,159 +1,114 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>금을 만들자 | Let's Make Gold</title>
-    <style>
-        :root {
-            --gold-primary: #ffd700;
-            --gold-dark: #b8860b;
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-bottom: 2px solid var(--gold-primary);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--gold-primary);
-        }
-
-        .lang-switch {
-            background-color: transparent;
-            border: 1px solid var(--gold-primary);
-            color: var(--gold-primary);
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .lang-switch:hover {
-            background-color: var(--gold-primary);
-            color: var(--bg-color);
-        }
-
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--gold-primary);
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-
-        p {
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .btn-gold {
-            background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
-            border: none;
-            color: #000;
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-gold:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-        }
-
-        footer {
-            text-align: center;
-            padding: 1rem;
-            border-top: 1px solid #333;
-            color: #888;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title">나는 금을 만들고 싶었다</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <div class="logo" id="logo">금을 만들자</div>
-        <button class="lang-switch" id="langBtn" onclick="toggleLanguage()">English</button>
+  <div class="dashboard">
+    <header class="header">
+      <div class="lang-selector">
+        <select id="langSelect">
+          <option value="ko" selected>한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+      <h1 data-i18n="title">나는 금을 만들고 싶었다</h1>
+      <p data-i18n="subtitle">파동 공명과 공간 압축을 통한 원자 재배열 시뮬레이터</p>
     </header>
 
-    <main>
-        <h1 id="title">금을 만들자</h1>
-        <p id="description">연금술의 비밀을 풀어 직접 금을 제작해보세요. 클릭 한 번으로 당신만의 자산을 늘려가는 즐거운 경험을 시작합니다!</p>
-        <button class="btn-gold" id="actionBtn" onclick="makeGold()">금 연성하기</button>
+    <main class="grid-container">
+      <!-- 모듈 1 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 data-i18n="m1_title">[모듈 1] 망치 vs 열쇠</h2>
+          <span class="status-badge" id="badge1">IDLE</span>
+        </div>
+        <p class="desc" data-i18n="m1_desc">무작정 출력과 정밀한 위상/주파수 공명의 차이</p>
+        <div class="canvas-wrapper"><canvas id="canvas1"></canvas></div>
+        <div class="info-panel" id="info1" data-i18n="m1_info">
+          에너지만 높이면 쿨롱 장벽에 막혀 열이 발생하지만, 위상을 일치시키면 양자 터널링 현상이 일어납니다.
+        </div>
+        <div class="controls">
+          <div class="control-group">
+            <label><span data-i18n="m1_pwr">출력 에너지</span>: <span id="val1-1">50</span> MW</label>
+            <input type="range" id="slider1-1" min="1" max="100" value="50">
+          </div>
+          <div class="control-group">
+            <label><span data-i18n="m1_res">위상 공명도</span>: <span id="val1-2">0</span> %</label>
+            <input type="range" id="slider1-2" min="0" max="100" value="0">
+          </div>
+        </div>
+      </section>
+
+      <!-- 모듈 2 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 data-i18n="m2_title">[모듈 2] 공간 압축 도파관</h2>
+          <span class="status-badge" id="badge2">NORMAL</span>
+        </div>
+        <p class="desc" data-i18n="m2_desc">채널 간격 수축에 따른 고조파(HHG) 주파수 변환</p>
+        <div class="canvas-wrapper"><canvas id="canvas2"></canvas></div>
+        <div class="info-panel" id="info2" data-i18n="m2_info">
+          나노 채널이 좁아질수록 파동의 파장이 압축되며 고에너지 감마선 영역(HHG)으로 변환됩니다.
+        </div>
+        <div class="controls">
+          <div class="control-group">
+            <label><span data-i18n="m2_gap">도파관 간격</span>: <span id="val2">150</span> nm</label>
+            <input type="range" id="slider2" min="20" max="250" value="150">
+          </div>
+        </div>
+      </section>
+
+        <!-- 모듈 3 -->
+        <section class="card">
+            <div class="card-header">
+                <h2 data-i18n="m3_title">[모듈 3] 미시 우주 컴파일러</h2>
+                <span class="status-badge" id="badge3">H⁺ IONIZED</span>
+            </div>
+            <p class="desc" data-i18n="m3_desc">수소 이온화 및 파동 촉매를 이용한 중원소 합성</p>
+            <div class="canvas-wrapper"><canvas id="canvas3"></canvas></div>
+            <div class="info-panel" id="info3" data-i18n="m3_info">
+                파동 공명 에너지가 고농축 수소 입자를 중성자 합성 반응으로 이끌어 금(Au) 원자핵을 형성합니다.
+            </div>
+            <div class="controls">
+                <div class="player-controls">
+                <button id="btnPlay3" class="btn-play">▶</button>
+                <input type="range" id="timeline3" min="0" max="100" value="0" step="0.1">
+                <span id="timeVal3" class="time-display">0.0%</span>
+                </div>
+            </div>
+        </section>
+
+      <!-- 모듈 4 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 data-i18n="m4_title">[모듈 4] 미시-거시 우주 스케일 줌</h2>
+          <span class="status-badge" id="badge4">10⁰ m</span>
+        </div>
+        <p class="desc" data-i18n="m4_desc">펨토미터 양자 파동부터 거시 우주 결정화까지의 대칭성</p>
+        <div class="canvas-wrapper"><canvas id="canvas4"></canvas></div>
+        <div class="info-panel" id="info4" data-i18n="m4_info">
+          미시 양자 파동의 간섭 패턴과 거시 우주 거시 구조(Cosmic Web)의 결정화망은 동일한 대칭성을 가집니다.
+        </div>
+        <div class="controls">
+          <div class="control-group">
+            <label><span data-i18n="m4_scale">시공간 스케일</span>: <span id="val4">10⁰ m</span></label>
+            <input type="range" id="slider4" min="-15" max="26" value="0">
+          </div>
+        </div>
+      </section>
     </main>
+  </div>
 
-    <footer>
-        <p id="footerText">&copy; 2026 금을 만들자 (Let's Make Gold). All rights reserved.</p>
-    </footer>
-
-    <script>
-        let currentLang = 'ko';
-
-        const i18n = {
-            ko: {
-                logo: "금을 만들자",
-                title: "금을 만들자",
-                description: "연금술의 비밀을 풀어 직접 금을 제작해보세요. 클릭 한 번으로 당신만의 자산을 늘려가는 즐거운 경험을 시작합니다!",
-                actionBtn: "금 연성하기",
-                langBtn: "English",
-                goldCreated: "금 1g이 만들어졌습니다!"
-            },
-            en: {
-                logo: "Let's Make Gold",
-                title: "Let's Make Gold",
-                description: "Unlock the secrets of alchemy and craft your own gold. Start the fun experience of growing your wealth with a single click!",
-                actionBtn: "Craft Gold",
-                langBtn: "한국어",
-                goldCreated: "1g of Gold created!"
-            }
-        };
-
-        function toggleLanguage() {
-            currentLang = currentLang === 'ko' ? 'en' : 'ko';
-            document.getElementById('logo').innerText = i18n[currentLang].logo;
-            document.getElementById('title').innerText = i18n[currentLang].title;
-            document.getElementById('description').innerText = i18n[currentLang].description;
-            document.getElementById('actionBtn').innerText = i18n[currentLang].actionBtn;
-            document.getElementById('langBtn').innerText = i18n[currentLang].langBtn;
-        }
-
-        function makeGold() {
-            alert(i18n[currentLang].goldCreated);
-        }
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="module1.js"></script>
+<script src="module2.js"></script>
+<script src="module3.js"></script>
+<script src="module4.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
