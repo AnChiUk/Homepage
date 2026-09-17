@@ -3,277 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio | Developer</title>
+    <title>금을 만들자 | Let's Make Gold</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --container-bg: #1e1e1e;
-            --text-main: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --highlight: #64b5f6;
-            --secondary: #4f5b62;
-            --border-color: #333333;
-            --card-hover: #2a2a2a;
+            --gold-primary: #ffd700;
+            --gold-dark: #b8860b;
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
             margin: 0;
             padding: 0;
-            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        body.en [lang="ko"] { display: none !important; }
-        body.ko [lang="en"] { display: none !important; }
-
         header {
-            background-color: var(--container-bg);
-            padding: 4rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            position: relative;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-bottom: 2px solid var(--gold-primary);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--gold-primary);
         }
 
         .lang-switch {
-            position: absolute;
-            top: 2rem;
-            right: 2rem;
-            display: flex;
-            gap: 5px;
-            background: rgba(0,0,0,0.3);
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            z-index: 10;
-        }
-
-        .lang-switch button {
-            background: transparent;
-            color: var(--text-muted);
-            border: none;
-            padding: 5px 15px;
+            background-color: transparent;
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 0.5rem 1rem;
             cursor: pointer;
-            font-weight: 600;
-            border-radius: 2px;
-            transition: all 0.2s;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.3s ease;
         }
 
-        .lang-switch button.active {
-            background: var(--highlight);
-            color: #121212;
+        .lang-switch:hover {
+            background-color: var(--gold-primary);
+            color: var(--bg-color);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
         }
 
         h1 {
-            color: #ffffff;
-            font-size: 2.5rem;
-            margin: 0;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--gold-primary);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
-        .subtitle {
+        p {
             font-size: 1.2rem;
-            margin-top: 15px;
-            color: var(--text-muted);
             max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 3rem auto;
-            padding: 0 2rem;
-        }
-
-        .section-title {
-            color: var(--highlight);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
             margin-bottom: 2rem;
-            font-size: 1.8rem;
-            font-weight: 600;
+            line-height: 1.6;
         }
 
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 2rem;
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+            border: none;
+            color: #000;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        /* 프로젝트 카드 스타일 */
-        .project-card {
-            display: flex;
-            flex-direction: column;
-            background-color: var(--container-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            border-color: var(--highlight);
-            background-color: var(--card-hover);
-        }
-
-        .project-img-placeholder {
-            width: 100%;
-            height: 180px;
-            background-color: #2a2a2a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--secondary);
-            font-size: 2rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .project-content {
-            padding: 1.5rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .project-content h3 {
-            color: #ffffff;
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-        }
-
-        .project-content p {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-bottom: 1.5rem;
-            flex-grow: 1;
-        }
-
-        .tech-stack {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .tech-badge {
-            background: #282828;
-            color: var(--highlight);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid var(--border-color);
-        }
-
-        .view-btn {
-            display: inline-block;
-            background-color: transparent;
-            color: var(--highlight);
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            margin-top: auto;
-        }
-
-        .project-card:hover .view-btn {
-            text-decoration: underline;
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
         }
 
         footer {
             text-align: center;
-            padding: 3rem 2rem;
-            margin-top: 4rem;
-            background-color: var(--container-bg);
-            border-top: 1px solid var(--border-color);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        @media (max-width: 768px) {
-            header {
-                padding: 3rem 1rem;
-            }
-            .lang-switch {
-                position: relative;
-                top: 0;
-                right: 0;
-                justify-content: center;
-                margin: 0 auto 2rem auto;
-                width: max-content;
-            }
-            h1 { font-size: 2rem; }
-            .container { padding: 0 1rem; margin: 2rem auto; }
+            padding: 1rem;
+            border-top: 1px solid #333;
+            color: #888;
         }
     </style>
 </head>
-<body class="ko"> 
-
+<body>
     <header>
-        <div class="container" style="margin: 0 auto; padding: 0;">
-            <div class="lang-switch">
-                <button id="btn-ko" class="active" onclick="setLanguage('ko')">KO</button>
-                <button id="btn-en" onclick="setLanguage('en')">EN</button>
-            </div>
-
-            <h1 lang="ko">소프트웨어 엔지니어 포트폴리오</h1>
-            <h1 lang="en">Software Engineer Portfolio</h1>
-            
-            <div class="subtitle" lang="ko">컴퓨터 그래픽스, 물리 엔진 개발 및 데이터 시각화에 주력하는 개발자입니다. 아래에서 주요 프로젝트를 확인해 보세요.</div>
-            <div class="subtitle" lang="en">A developer focused on computer graphics, physics engine development, and data visualization. Explore my projects below.</div>
-        </div>
+        <div class="logo" id="logo">금을 만들자</div>
+        <button class="lang-switch" id="langBtn" onclick="toggleLanguage()">English</button>
     </header>
 
-    <div class="container">
-        <h2 class="section-title" lang="ko">프로젝트 목록</h2>
-        <h2 class="section-title" lang="en">Selected Projects</h2>
-        
-        <div class="project-grid">
-            
-            <a href="ether-physics.html" class="project-card">
-                <div class="project-img-placeholder">🌌</div>
-                <div class="project-content">
-                    <h3 lang="ko">3D 에테르 역학 시뮬레이션</h3>
-                    <h3 lang="en">3D Ether Physics Simulation</h3>
-                    
-                    <div class="tech-stack">
-                        <span class="tech-badge">Compute Shader</span>
-                        <span class="tech-badge">GPGPU</span>
-                        <span class="tech-badge">Unity / C#</span>
-                    </div>
-                    
-                    <p lang="ko">격자 모델을 기반으로 파동 전파, 질량 축적, 특이점 등을 연산하고 시각화하는 커스텀 물리 엔진 및 렌더링 파이프라인.</p>
-                    <p lang="en">A custom physics engine and rendering pipeline computing wave propagation, mass accumulation, and singularities based on a grid model.</p>
-                    
-                    <span class="view-btn" lang="ko">상세 보고서 보기 →</span>
-                    <span class="view-btn" lang="en">Read Report →</span>
-                </div>
-            </a>
-            
-
-        </div>
-    </div>
+    <main>
+        <h1 id="title">금을 만들자</h1>
+        <p id="description">연금술의 비밀을 풀어 직접 금을 제작해보세요. 클릭 한 번으로 당신만의 자산을 늘려가는 즐거운 경험을 시작합니다!</p>
+        <button class="btn-gold" id="actionBtn" onclick="makeGold()">금 연성하기</button>
+    </main>
 
     <footer>
-        <p>
-            <strong lang="ko">© 2026 Developer Portfolio. All rights reserved.</strong>
-            <strong lang="en">© 2026 Developer Portfolio. All rights reserved.</strong>
-        </p>
+        <p id="footerText">&copy; 2026 금을 만들자 (Let's Make Gold). All rights reserved.</p>
     </footer>
 
     <script>
-        function setLanguage(lang) {
-            document.body.className = lang;
-            document.getElementById('btn-ko').classList.remove('active');
-            document.getElementById('btn-en').classList.remove('active');
-            document.getElementById('btn-' + lang).classList.add('active');
+        let currentLang = 'ko';
+
+        const i18n = {
+            ko: {
+                logo: "금을 만들자",
+                title: "금을 만들자",
+                description: "연금술의 비밀을 풀어 직접 금을 제작해보세요. 클릭 한 번으로 당신만의 자산을 늘려가는 즐거운 경험을 시작합니다!",
+                actionBtn: "금 연성하기",
+                langBtn: "English",
+                goldCreated: "금 1g이 만들어졌습니다!"
+            },
+            en: {
+                logo: "Let's Make Gold",
+                title: "Let's Make Gold",
+                description: "Unlock the secrets of alchemy and craft your own gold. Start the fun experience of growing your wealth with a single click!",
+                actionBtn: "Craft Gold",
+                langBtn: "한국어",
+                goldCreated: "1g of Gold created!"
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ko' ? 'en' : 'ko';
+            document.getElementById('logo').innerText = i18n[currentLang].logo;
+            document.getElementById('title').innerText = i18n[currentLang].title;
+            document.getElementById('description').innerText = i18n[currentLang].description;
+            document.getElementById('actionBtn').innerText = i18n[currentLang].actionBtn;
+            document.getElementById('langBtn').innerText = i18n[currentLang].langBtn;
+        }
+
+        function makeGold() {
+            alert(i18n[currentLang].goldCreated);
         }
     </script>
 </body>
