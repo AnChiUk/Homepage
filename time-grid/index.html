@@ -13,7 +13,7 @@
       <a href="../index.html" class="back-btn">← 목록으로</a>
       <h1>시간 그리드 사고 실험</h1>
       <p class="lead">시간, 공간, 빛, 중력을 그리드 사이의 에너지 전달 하나로 설명할 수 있는지 시험한다.</p>
-      <p class="meta">2026-10-22 기준 · <a href="https://github.com/AnChiUk/Homepage/tree/main/time-grid" target="_blank" rel="noopener">시뮬레이션 코드와 데이터</a></p>
+      <p class="meta">2026-10-23 기준 · <a href="https://github.com/AnChiUk/Homepage/tree/main/time-grid" target="_blank" rel="noopener">시뮬레이션 코드와 데이터</a></p>
     </div>
   </header>
 
@@ -93,6 +93,37 @@
       </div>
       <div class="readout"></div>
       <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <!-- 동역학 2-b-1 중력파 방출 -->
+    <article class="panel" id="p-emit" data-load="emit">
+      <header>
+        <span class="tag">동역학 2-b-1</span>
+        <h3>궤도를 도는 원천이 내보내는 막 변형파</h3>
+        <p>두 덩어리가 원 궤도를 돌게 한 원천을 3D 격자 224³에 두었다. 막 변형파가 궤도 주기의 절반 주기로 나선을 그리며 퍼지고, 세기는 같은 G로 계산한 4중극 공식과 1.5% 안에서 맞는다(반지름 32~64 평균 0.985).</p>
+      </header>
+      <div class="views two">
+        <figure>
+          <canvas class="cv-xy" width="320" height="320"></canvas>
+          <figcaption>궤도 평면(xy, z = 0)의 r·h+ (거리에 따른 감소를 뺀 값). 가운데 두 점이 덩어리, 한 변 128칸</figcaption>
+        </figure>
+        <figure>
+          <canvas class="cv-xz" width="320" height="320"></canvas>
+          <figcaption>옆에서 본 단면(xz, y = 0)의 r·h+. 위아래(z) 방향으로 가장 세게 나간다</figcaption>
+        </figure>
+      </div>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <div class="views two">
+        <figure>
+          <canvas class="cv-ring" width="320" height="320"></canvas>
+          <figcaption>z = 40 위 고리 표지 16개까지 틱으로 잰 거리 변화(<b class="exag"></b>배 과장). 보존 원천, 예측과의 차이 1% 이내</figcaption>
+        </figure>
+        <figure>
+          <canvas class="cv-chart chart" width="420" height="320"></canvas>
+          <figcaption>정면(z축) r·진폭 ÷ 4중극 예측. 선은 같은 규칙의 정확한 해(점 원천). 운동 응력만은 160³ 격자, r = 48은 흡수층 영향</figcaption>
+        </figure>
+      </div>
       <p class="status">불러오는 중…</p>
     </article>
 

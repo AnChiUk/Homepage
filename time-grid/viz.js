@@ -297,6 +297,74 @@
     player.reset(mutual.frames.length);
   }
 
+  // ── 동역학 2-b-1 중력파 방출 ────────────────────────
+  async function initEmit(panel) {
+    const d = await loadJSON('web_gw_emission.json');
+    const half = d.view / 2;
+    const ringCv = panel.querySelector('.cv-ring'), exagEl = panel.querySelector('.exag');
+    let dmax = 0;
+    for (const r of d.rings_bound) for (const v of r) dmax = Math.max(dmax, Math.abs(v));
+    const raw = 0.3 * d.ring_radius / dmax, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const exag = Math.floor(raw / mag) * mag;
+    exagEl.textContent = exag.toLocaleString('ko-KR');
+
+    function slice(canvas, f, orbit) {
+      const { ctx, w, h } = hiDPI(canvas), n = f.length, cell = d.view / n;
+      // 진폭이 1/r 로 줄어드므로 중심에서의 거리 r 을 곱해(r·h+ ÷ 예측) 먼 곳 파동도 같은 밝기로 보이게 한다
+      paintGrid(ctx, n, n, (r, c) => {
+        const x = (r + 0.5) * cell - half, y = (c + 0.5) * cell - half;
+        return ramp(DIVERGING, 0.5 + 0.5 * f[r][c] * Math.hypot(x, y));
+      }, (r, c) => [r, n - 1 - c], 0, 0, w, h);
+      const X = x => (x + half) / d.view * w, Y = y => h - (y + half) / d.view * h;
+      if (orbit) {
+        ctx.fillStyle = '#ffffff';
+        for (const s of [1, -1]) {
+          ctx.beginPath(); ctx.arc(X(s * d.r0 * Math.cos(orbit)), Y(s * d.r0 * Math.sin(orbit)), 3, 0, 7); ctx.fill();
+        }
+      }
+      return { ctx, w, h };
+    }
+
+    function drawRing(i) {
+      const { ctx, w, h } = hiDPI(ringCv);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, R = 0.32 * w, k = R / d.ring_radius;
+      ctx.strokeStyle = '#555'; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      const pts = d.ring_angles.map((a, j) => {
+        const r = (d.ring_radius + d.rings_bound[i][j] * exag) * k;
+        return [cx + r * Math.cos(a), cy - r * Math.sin(a)];
+      });
+      ctx.strokeStyle = COL.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); pts.forEach(([x, y], j) => j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = COL.warm;
+      for (const [x, y] of pts) { ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill(); }
+      ctx.lineWidth = 1;
+      ctx.fillStyle = COL.muted; ctx.font = '12px system-ui, sans-serif';
+      ctx.fillText('x →', w - 34, cy - 6); ctx.fillText('y ↑', cx + 6, 16);
+    }
+
+    const amp = d.amp;
+    lineChart(panel.querySelector('.cv-chart'), [
+      { name: '정확한 해', color: '#737373', x: amp.theory.r, y: amp.theory.face },
+      { name: '보존 원천', color: COL.accent, x: amp.bound_224.r, y: amp.bound_224.face, dots: true },
+      { name: '운동 응력만', color: COL.warm, x: amp.kinetic_160.r, y: amp.kinetic_160.face, dots: true },
+    ], { xlab: '반지름 r', ylab: 'r·진폭 ÷ 예측', xmin: 10, xmax: 80, ymin: 0, ymax: 1.2, fmtY: v => v.toFixed(1) });
+
+    function render(i) {
+      const f = d.frames[i];
+      slice(panel.querySelector('.cv-xy'), f.xy, d.omega * f.t);
+      const { ctx, w, h } = slice(panel.querySelector('.cv-xz'), f.xz, null);
+      ctx.fillStyle = COL.text; ctx.font = '12px system-ui, sans-serif';
+      ctx.fillText('z ↑', w / 2 + 6, 16); ctx.fillText('x →', w - 34, h - 10);
+      drawRing(i);
+      const on = f.t < d.ramp ? ' · 원천 켜는 중' : '';
+      panel.querySelector('.time').textContent = 't = ' + f.t.toFixed(0) + ' / ' + d.frames.at(-1).t.toFixed(0) + on;
+    }
+
+    makePlayer(panel, render, 8).reset(d.frames.length);
+  }
+
   // ── 격자 보존 오차 ─────────────────────────────────
   async function initCons(panel) {
     const d = await loadJSON('conservation.json');
@@ -360,7 +428,7 @@
   }
 
   // ── 시작: 패널은 화면 가까이 오면 데이터를 읽는다 ──────
-  const loaders = { gw: initGW, single: initSingle, binary: initBinary, cons: initCons, fail: initFail };
+  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, cons: initCons, fail: initFail };
   function start(panel) {
     const s = panel.querySelector('.status');
     loaders[panel.dataset.load](panel).then(() => { if (!s.classList.contains('err')) s.textContent = ''; }, err => fail(panel, err));

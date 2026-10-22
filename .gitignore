@@ -40,3 +40,7 @@ pnpm-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# 시간 그리드: 다시 만들 수 있는 큰 원본 결과 (각 10 MB)
+time-grid/viz_data/gw_emission_*.json
+__pycache__/
