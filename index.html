@@ -3,112 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="title">나는 금을 만들고 싶었다</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>프로젝트 목록</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --card-hover: #262626;
+      --text: #e0e0e0;
+      --muted: #a0a0a0;
+      --border: #333333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 16px 64px; }
+    header { margin-bottom: 40px; }
+    header h1 { font-size: 2rem; letter-spacing: -0.5px; }
+    header p { color: var(--muted); margin-top: 6px; }
+    h2 {
+      font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muted); margin: 40px 0 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+      gap: 16px;
+    }
+    .card {
+      display: flex; flex-direction: column;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 22px 22px 18px;
+      color: inherit; text-decoration: none;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover { background: var(--card-hover); transform: translateY(-2px); }
+    .card .tag { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+    .card h3 { font-size: 1.15rem; margin: 6px 0 8px; }
+    .card p { color: var(--muted); font-size: 0.92rem; flex: 1; }
+    .card .go { margin-top: 14px; font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+    .card.small { padding: 16px 18px; }
+    .card.small h3 { font-size: 1rem; margin: 0 0 4px; }
+  </style>
 </head>
 <body>
-  <div class="dashboard">
-    <header class="header">
-      <div class="lang-selector">
-        <select id="langSelect">
-          <option value="ko" selected>한국어</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-        </select>
-      </div>
-      <h1 data-i18n="title">나는 금을 만들고 싶었다</h1>
-      <p data-i18n="subtitle">파동 공명과 공간 압축을 통한 원자 재배열 시뮬레이터</p>
+  <div class="wrap">
+    <header>
+      <h1>프로젝트</h1>
+      <p>시간, 공간, 물질을 격자 위에서 다시 짜 보는 사고 실험과 시뮬레이션 모음</p>
     </header>
 
-    <main class="grid-container">
-      <!-- 모듈 1 -->
-      <section class="card">
-        <div class="card-header">
-          <h2 data-i18n="m1_title">[모듈 1] 망치 vs 열쇠</h2>
-          <span class="status-badge" id="badge1">IDLE</span>
-        </div>
-        <p class="desc" data-i18n="m1_desc">무작정 출력과 정밀한 위상/주파수 공명의 차이</p>
-        <div class="canvas-wrapper"><canvas id="canvas1"></canvas></div>
-        <div class="info-panel" id="info1" data-i18n="m1_info">
-          에너지만 높이면 쿨롱 장벽에 막혀 열이 발생하지만, 위상을 일치시키면 양자 터널링 현상이 일어납니다.
-        </div>
-        <div class="controls">
-          <div class="control-group">
-            <label><span data-i18n="m1_pwr">출력 에너지</span>: <span id="val1-1">50</span> MW</label>
-            <input type="range" id="slider1-1" min="1" max="100" value="50">
-          </div>
-          <div class="control-group">
-            <label><span data-i18n="m1_res">위상 공명도</span>: <span id="val1-2">0</span> %</label>
-            <input type="range" id="slider1-2" min="0" max="100" value="0">
-          </div>
-        </div>
-      </section>
+    <h2>진행 중</h2>
+    <div class="grid">
+      <a class="card" href="time-grid/" style="--accent:#7dd3fc">
+        <span class="tag">사고 실험 · 2026-10-22 기준</span>
+        <h3>시간 그리드 사고 실험</h3>
+        <p>시간, 공간, 빛, 중력을 그리드 사이의 에너지 전달 하나로 설명할 수 있는지 시험한다. 중력파 두 편광, 자기 중력으로 묶인 파동 덩어리, 케플러 궤도까지의 시뮬레이션 기록.</p>
+        <span class="go">실험 보기 →</span>
+      </a>
+      <a class="card" href="gold.html" style="--accent:#fbbf24">
+        <span class="tag">시뮬레이터</span>
+        <h3>나는 금을 만들고 싶었다</h3>
+        <p>파동 공명과 공간 압축을 통한 원자 재배열 시뮬레이터. 위상 공명, 도파관 압축, 중원소 합성, 스케일 줌 네 모듈.</p>
+        <span class="go">시뮬레이터 열기 →</span>
+      </a>
+      <a class="card" href="ether-physics.html" style="--accent:#64b5f6">
+        <span class="tag">보고서</span>
+        <h3>3D 에테르 역학 시뮬레이션</h3>
+        <p>격자 모델 기반의 파동 및 물리 연산 엔진 구현 기술서와 시연 영상.</p>
+        <span class="go">보고서 보기 →</span>
+      </a>
+    </div>
 
-      <!-- 모듈 2 -->
-      <section class="card">
-        <div class="card-header">
-          <h2 data-i18n="m2_title">[모듈 2] 공간 압축 도파관</h2>
-          <span class="status-badge" id="badge2">NORMAL</span>
-        </div>
-        <p class="desc" data-i18n="m2_desc">채널 간격 수축에 따른 고조파(HHG) 주파수 변환</p>
-        <div class="canvas-wrapper"><canvas id="canvas2"></canvas></div>
-        <div class="info-panel" id="info2" data-i18n="m2_info">
-          나노 채널이 좁아질수록 파동의 파장이 압축되며 고에너지 감마선 영역(HHG)으로 변환됩니다.
-        </div>
-        <div class="controls">
-          <div class="control-group">
-            <label><span data-i18n="m2_gap">도파관 간격</span>: <span id="val2">150</span> nm</label>
-            <input type="range" id="slider2" min="20" max="250" value="150">
-          </div>
-        </div>
-      </section>
-
-        <!-- 모듈 3 -->
-        <section class="card">
-            <div class="card-header">
-                <h2 data-i18n="m3_title">[모듈 3] 미시 우주 컴파일러</h2>
-                <span class="status-badge" id="badge3">H⁺ IONIZED</span>
-            </div>
-            <p class="desc" data-i18n="m3_desc">수소 이온화 및 파동 촉매를 이용한 중원소 합성</p>
-            <div class="canvas-wrapper"><canvas id="canvas3"></canvas></div>
-            <div class="info-panel" id="info3" data-i18n="m3_info">
-                파동 공명 에너지가 고농축 수소 입자를 중성자 합성 반응으로 이끌어 금(Au) 원자핵을 형성합니다.
-            </div>
-            <div class="controls">
-                <div class="player-controls">
-                <button id="btnPlay3" class="btn-play">▶</button>
-                <input type="range" id="timeline3" min="0" max="100" value="0" step="0.1">
-                <span id="timeVal3" class="time-display">0.0%</span>
-                </div>
-            </div>
-        </section>
-
-      <!-- 모듈 4 -->
-      <section class="card">
-        <div class="card-header">
-          <h2 data-i18n="m4_title">[모듈 4] 미시-거시 우주 스케일 줌</h2>
-          <span class="status-badge" id="badge4">10⁰ m</span>
-        </div>
-        <p class="desc" data-i18n="m4_desc">펨토미터 양자 파동부터 거시 우주 결정화까지의 대칭성</p>
-        <div class="canvas-wrapper"><canvas id="canvas4"></canvas></div>
-        <div class="info-panel" id="info4" data-i18n="m4_info">
-          미시 양자 파동의 간섭 패턴과 거시 우주 거시 구조(Cosmic Web)의 결정화망은 동일한 대칭성을 가집니다.
-        </div>
-        <div class="controls">
-          <div class="control-group">
-            <label><span data-i18n="m4_scale">시공간 스케일</span>: <span id="val4">10⁰ m</span></label>
-            <input type="range" id="slider4" min="-15" max="26" value="0">
-          </div>
-        </div>
-      </section>
-    </main>
+    <h2>이전 작업</h2>
+    <div class="grid">
+      <a class="card small" href="index1.html" style="--accent:#a3a3a3">
+        <h3>Voxel World with LOD System</h3>
+        <p>복셀 월드와 LOD 렌더링 실험</p>
+      </a>
+      <a class="card small" href="index2.html" style="--accent:#a3a3a3">
+        <h3>오키드아일랜드 캐피탈 (ORC) 분석</h3>
+        <p>심층 분석 인포그래픽</p>
+      </a>
+      <a class="card small" href="index3.html" style="--accent:#a3a3a3">
+        <h3>국가시설 프로젝트 보안 준거성 점검</h3>
+        <p>보안 점검 정리 페이지</p>
+      </a>
+    </div>
   </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="module1.js"></script>
-<script src="module2.js"></script>
-<script src="module3.js"></script>
-<script src="module4.js"></script>
-<script src="app.js"></script>
 </body>
 </html>

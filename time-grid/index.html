@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시간 그리드 사고 실험</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a href="../index.html" class="back-btn">← 목록으로</a>
+      <h1>시간 그리드 사고 실험</h1>
+      <p class="lead">시간, 공간, 빛, 중력을 그리드 사이의 에너지 전달 하나로 설명할 수 있는지 시험한다.</p>
+      <p class="meta">2026-10-22 기준 · <a href="https://github.com/AnChiUk/Homepage/tree/main/time-grid" target="_blank" rel="noopener">시뮬레이션 코드와 데이터</a></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="summary">
+      <div class="stat"><span class="num">γ = 1.04</span><span class="lbl">격자 파속 휨으로 잰 공간 휨 대 시간 휨의 비 (일반상대성이론 1)</span></div>
+      <div class="stat"><span class="num">+ / ×</span><span class="lbl">3D 격자의 막 변형파가 퍼뜨리는 편광은 둘뿐</span></div>
+      <div class="stat"><span class="num">486°</span><span class="lbl">스스로 묶인 두 파동 덩어리가 1.25주기 동안 돈 각도 (케플러 보정 예측 483°)</span></div>
+    </section>
+
+    <nav class="toc" aria-label="목차">
+      <a href="#viz">시각화</a>
+      <span id="toc-doc"></span>
+    </nav>
+
+    <h2 id="viz" class="section-title">시각화</h2>
+    <p class="section-desc">계산은 파이썬으로 하고, 여기서는 저장된 프레임을 재생한다. 측정 원칙에 맞는 값(시계 속도, 틱으로 잰 거리, 파속 궤적)만 그린다.</p>
+
+    <!-- 동역학 2-a 중력파 -->
+    <article class="panel" id="p-gw" data-load="gw">
+      <header>
+        <span class="tag">동역학 2-a</span>
+        <h3>자유 중력파: 고리 표지의 찌그러짐</h3>
+        <p>3D 격자 96³에서 막 변형 펄스를 z 방향으로 보냈다. + 편광은 고리를 cos2θ 모양으로만, × 편광은 sin2θ 모양으로만 찌그러뜨리고 두 모양은 섞이지 않는다(섞인 성분 10⁻⁹ 이하).</p>
+      </header>
+      <div class="seg" role="group" aria-label="편광">
+        <button class="on" data-pol="plus">+ 편광</button>
+        <button data-pol="cross">× 편광</button>
+      </div>
+      <div class="views two">
+        <figure>
+          <canvas class="cv-slice" width="320" height="320"></canvas>
+          <figcaption>xz 단면의 TT 진폭. 파동은 왼쪽에서 오른쪽(z)으로 진행, 세로 점선이 고리 위치(z = 0)</figcaption>
+        </figure>
+        <figure>
+          <canvas class="cv-ring" width="320" height="320"></canvas>
+          <figcaption>xy 평면의 고리 표지 16개. 점선은 원래 반지름 6, 실선은 틱으로 잰 거리 변화를 <b class="exag"></b>배 과장</figcaption>
+        </figure>
+      </div>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <label class="check"><input type="checkbox" class="baseline" checked> 처음부터 있던 고정된 이름표 모양 빼기</label>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <!-- 동역학 2-c-1 자기 묶임 -->
+    <article class="panel" id="p-single" data-load="single">
+      <header>
+        <span class="tag">동역학 2-c-1</span>
+        <h3>자기 묶임: 중력 켬과 끔</h3>
+        <p>같은 파동 덩어리를 2D 격자 256²에 두고 300 시간 단위 동안 진행했다. 중력을 켜면 폭이 1.808 → 1.806으로 그대로이고, 끄면 26.1까지 퍼진다. 처음 나온 묶인 물체다.</p>
+      </header>
+      <div class="views two">
+        <figure><canvas class="cv-on" width="300" height="300"></canvas><figcaption>중력 켬: 에너지 분포</figcaption></figure>
+        <figure><canvas class="cv-off" width="300" height="300"></canvas><figcaption>중력 끔: 에너지 분포</figcaption></figure>
+      </div>
+      <canvas class="cv-chart chart" width="640" height="220"></canvas>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <!-- 동역학 2-c-2 두 덩어리 궤도 -->
+    <article class="panel" id="p-binary" data-load="binary">
+      <header>
+        <span class="tag">동역학 2-c-2</span>
+        <h3>두 덩어리 궤도</h3>
+        <p>스스로 묶인 덩어리 둘을 거리 12에 원 궤도 속도 0.0645로 놓았다. 서로 끌림을 켜면 이심률 0.048의 묶인 궤도를 돈다. 끌림을 끄면(각자 자기 장만) 직선으로 멀어진다.</p>
+      </header>
+      <div class="seg" role="group" aria-label="조건">
+        <button class="on" data-case="mutual">서로 끌림 켬</button>
+        <button data-case="nomutual">끌림 끔 (대조군)</button>
+      </div>
+      <div class="views one">
+        <figure>
+          <canvas class="cv-orbit" width="560" height="560"></canvas>
+          <figcaption>배경은 시계 지도(푸를수록 시계가 느림), 밝은 점은 저장 파동 에너지, 선은 두 덩어리 중심의 궤적</figcaption>
+        </figure>
+      </div>
+      <div class="readout"></div>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <div class="pair">
+      <!-- 격자 보존 오차 -->
+      <article class="panel" id="p-cons" data-load="cons">
+        <header>
+          <span class="tag">동역학 2 준비</span>
+          <h3>격자 보존 오차</h3>
+          <p>격자에는 연속 평행 이동 대칭이 없어서 운동량 보존이 근사로만 성립한다. 파수×격자 간격이 클수록 오차가 커진다(폭 5칸 파속).</p>
+        </header>
+        <canvas class="cv-chart chart" width="480" height="260"></canvas>
+        <p class="status">불러오는 중…</p>
+      </article>
+
+      <!-- 실패 기록 -->
+      <article class="panel" id="p-fail" data-load="fail">
+        <header>
+          <span class="tag">동역학 2-c 시도 · 실패 기록</span>
+          <h3>실제 파동 그대로 돌렸을 때</h3>
+          <p>빠른 떨림(2μ)과 느린 움직임을 정적 장 하나로 함께 다루자 장이 떨림을 따라 출렁이며 질량이 새어 나갔다. 이 실패가 느린 극한으로 바꾼 이유다.</p>
+        </header>
+        <canvas class="cv-chart chart" width="480" height="260"></canvas>
+        <p class="status">불러오는 중…</p>
+      </article>
+    </div>
+
+    <h2 id="doc-start" class="section-title">실험 문서</h2>
+    <article id="doc" class="doc"><p class="status">문서를 불러오는 중…</p></article>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="viz.js"></script>
+</body>
+</html>

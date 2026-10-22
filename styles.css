@@ -25,6 +25,12 @@ body {
 }
 .header p { color: #94a3b8; font-size: 0.95rem; }
 
+.back-link {
+  position: absolute; left: 0; top: 6px;
+  color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 600;
+}
+.back-link:hover { color: #fbbf24; }
+
 .lang-selector { position: absolute; right: 0; top: 0; }
 .lang-selector select {
   background: #1e293b; color: #f8fafc; border: 1px solid #475569;
