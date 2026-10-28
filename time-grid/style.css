@@ -101,6 +101,7 @@ figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 6px; }
 .check { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 0.86rem; cursor: pointer; }
 .readout { color: var(--text); font-size: 0.9rem; font-variant-numeric: tabular-nums; text-align: center; min-height: 1.5em; }
 .legend { color: var(--muted); font-size: 0.82rem; line-height: 1.9; }
+.note { color: var(--muted); font-size: 0.86rem; margin-top: 6px; }
 .status { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
 .status:empty { display: none; }
 .status.err { color: #f87171; }

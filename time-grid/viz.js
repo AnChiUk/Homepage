@@ -365,6 +365,70 @@
     makePlayer(panel, render, 8).reset(d.frames.length);
   }
 
+  // ── 비선형 1 장 자신의 하중 ─────────────────────────
+  async function initField(panel) {
+    const [d, lat] = await Promise.all([loadJSON('field_stress_orbit.json'), loadJSON('field_stress_lattice.json')]);
+    const x = d.t.map(t => t / d.period);
+    const pick = (arr, k) => arr.map(v => v[k]);
+    const series = [
+      { name: '필요한 값 ½Ï', color: '#e0e0e0', x, y: pick(d.half_Idd, 0) },
+      { name: '물질 응력만', color: COL.warm, x, y: pick(d.Pi, 0) },
+      { name: '물질 + 장 자신의 하중', color: COL.accent, x, y: d.Pi.map((p, i) => p[0] + d.t_field[i][0]) },
+    ];
+    lineChart(panel.querySelector('.cv-chart'), series,
+      { xlab: '케플러 주기', ylab: '원천의 회전 성분 (xx−yy)/2', fmtY: v => v.toFixed(2), legend: false });
+    panel.querySelector('.legend').innerHTML = series.map(s => '<span style="color:' + s.color + '">━</span> ' + s.name).join('&nbsp;&nbsp; ')
+      + '&nbsp;&nbsp; (적분 비: 물질만 ' + d.ratios.matter.toFixed(2) + ', 합 ' + d.ratios.total.toFixed(2) + ')';
+    panel.querySelector('.lattice').textContent = lat.rows.map(r => r.rel_resid.toFixed(r.rel_resid < 0.01 ? 4 : 3)).join(' → ');
+  }
+
+  // ── 동역학 2-b-2 방출 에너지와 궤도 줄어듦 ───────────
+  async function initPower(panel) {
+    const [p, ins] = await Promise.all([loadJSON('gw_power_160.json'), loadJSON('inspiral.json')]);
+    const radii = Object.keys(p.flux);
+    const shades = ['#525252', '#737373', '#a3a3a3', COL.warm];
+    const series = [
+      ...radii.map((r, k) => ({ name: '구면 r = ' + r + ' 흐름', color: shades[k], x: p.t, y: p.flux[r] })),
+      { name: '원천이 넘겨준 에너지', color: COL.accent, x: p.t, y: p.W },
+    ];
+    lineChart(panel.querySelector('.cv-chart'), series,
+      { xlab: '시간 (원천은 t = ' + p.ramp + '까지 켜짐)', ylab: '에너지 흐름 ÷ 4중극 방출률 P', ymin: 0, ymax: 1.3, fmtY: v => v.toFixed(1), legend: false });
+    panel.querySelector('.legend').innerHTML = series.map(s => '<span style="color:' + s.color + '">━</span> ' + s.name).join('&nbsp;&nbsp; ');
+
+    // 나선: 두 곡선을 같은 시간축으로 재생한다 (곡선마다 한 덩어리의 x, y, 상대는 반대편)
+    const curves = Object.entries(ins.curves).map(([name, c], k) => ({ name, c, color: k ? COL.warm : COL.accent }));
+    const tEnd = Math.max(...curves.map(({ c }) => c.t.at(-1)));
+    const N = 240, cv = panel.querySelector('.cv-inspiral');
+    const idxAt = (c, t) => { let i = 0; while (i < c.t.length - 1 && c.t[i + 1] <= t) i++; return i; };
+
+    function render(f) {
+      const t = tEnd * f / (N - 1);
+      const { ctx, w, h } = hiDPI(cv);
+      ctx.clearRect(0, 0, w, h);
+      const R = 0.42 * w / (ins.a0 / 2), cx = w / 2, cy = h / 2;
+      ctx.strokeStyle = '#333'; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(cx, cy, R * ins.a0 / 2, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      const read = [];
+      for (const { name, c, color } of curves) {
+        const i = idxAt(c, t);
+        for (const s of [1, -1]) {
+          ctx.strokeStyle = color; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let j = 0; j <= i; j++) { const X = cx + s * c.x[j] * R, Y = cy - s * c.y[j] * R; j ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+          ctx.stroke(); ctx.globalAlpha = 1;
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(cx + s * c.x[i] * R, cy - s * c.y[i] * R, 5, 0, 7); ctx.fill();
+        }
+        const merged = t >= c.t.at(-1);
+        read.push(name + ' 거리 ' + c.a[i].toFixed(2) + (merged ? ' (합쳐짐, τ = ' + c.tau.toFixed(0) + ')' : ''));
+      }
+      ctx.lineWidth = 1;
+      panel.querySelector('.readout').textContent = read.join(' · ');
+      panel.querySelector('.time').textContent = 't = ' + t.toFixed(0) + ' / ' + tEnd.toFixed(0);
+    }
+    makePlayer(panel, render, 20).reset(N);
+  }
+
   // ── 격자 보존 오차 ─────────────────────────────────
   async function initCons(panel) {
     const d = await loadJSON('conservation.json');
@@ -430,7 +494,7 @@
   }
 
   // ── 시작: 패널은 화면 가까이 오면 데이터를 읽는다 ──────
-  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, cons: initCons, fail: initFail };
+  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, field: initField, power: initPower, cons: initCons, fail: initFail };
   function start(panel) {
     const s = panel.querySelector('.status');
     loaders[panel.dataset.load](panel).then(() => { if (!s.classList.contains('err')) s.textContent = ''; }, err => fail(panel, err));

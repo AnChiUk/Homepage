@@ -13,7 +13,7 @@
       <a href="../index.html" class="back-btn">← 목록으로</a>
       <h1>시간 그리드 사고 실험</h1>
       <p class="lead">시간, 공간, 빛, 중력을 그리드 사이의 에너지 전달 하나로 설명할 수 있는지 시험한다.</p>
-      <p class="meta">2026-10-23 기준 · <a href="https://github.com/AnChiUk/Homepage/tree/main/time-grid" target="_blank" rel="noopener">시뮬레이션 코드와 데이터</a></p>
+      <p class="meta">2026-10-28 기준 · <a href="https://github.com/AnChiUk/Homepage/tree/main/time-grid" target="_blank" rel="noopener">시뮬레이션 코드와 데이터</a></p>
     </div>
   </header>
 
@@ -124,6 +124,39 @@
           <figcaption>정면(z축) r·진폭 ÷ 4중극 예측. 선은 같은 규칙의 정확한 해(점 원천). 운동 응력만은 160³ 격자, r = 48은 흡수층 영향</figcaption>
         </figure>
       </div>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <!-- 비선형 1 장 자신의 하중 -->
+    <article class="panel" id="p-field" data-load="field">
+      <header>
+        <span class="tag">비선형 1</span>
+        <h3>장 자신도 막에 하중을 준다</h3>
+        <p>2-b-1에서 손으로 넣었던 "묶는 장의 응력"을 규칙에서 꺼냈다. 물질의 막 하중과 같은 정의(그리드를 밀었을 때 에너지가 바뀌는 정도)를 장 자신의 에너지에 적용하면 정확히 그 응력이 된다. 2-c의 실제 묶인 궤도에서 물질 응력만으로는 필요한 값의 0.55배, 장 자신의 하중까지 더하면 1.03배다.</p>
+      </header>
+      <canvas class="cv-chart chart" width="720" height="280"></canvas>
+      <p class="legend"></p>
+      <p class="note">3D 격자에서 장 하중의 발산이 물질이 받는 힘을 국소적으로 메우는지도 확인했다. 남는 오차가 덩어리 폭/격자 간격 2 / 4 / 8에서 <span class="lattice"></span>로 격자 간격²에 비례해 0으로 간다.</p>
+      <p class="status">불러오는 중…</p>
+    </article>
+
+    <!-- 동역학 2-b-2 방출 에너지와 궤도 줄어듦 -->
+    <article class="panel" id="p-power" data-load="power">
+      <header>
+        <span class="tag">동역학 2-b-2</span>
+        <h3>방출이 가져간 에너지만큼 궤도가 줄어든다</h3>
+        <p>원천이 막에 넘겨준 에너지와 구면을 지나 나가는 에너지가 4중극 방출률의 0.94~0.97배로 서로 맞았다(바깥 구면 흐름 ÷ 넘겨준 에너지 = 1.03). 막 에너지를 문서 원래 식으로 두면 나가는 에너지가 2배가 되어 보존이 깨지므로, 막 에너지 크기를 절반으로 확정했다.</p>
+      </header>
+      <canvas class="cv-chart chart" width="720" height="280"></canvas>
+      <p class="legend"></p>
+      <div class="views one">
+        <figure>
+          <canvas class="cv-inspiral" width="480" height="480"></canvas>
+          <figcaption>그만큼 궤도 에너지가 빠지면 두 덩어리가 나선을 그리며 합쳐진다(단열 계산). 파랑: 4중극 공식, 주황: 격자에서 잰 방출 세기(0.939배)</figcaption>
+        </figure>
+      </div>
+      <div class="readout"></div>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
       <p class="status">불러오는 중…</p>
     </article>
 
