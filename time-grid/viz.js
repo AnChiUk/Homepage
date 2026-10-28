@@ -488,6 +488,51 @@
     player.reset(N);
   }
 
+  // ── 비선형 2: 근일점 이동 ──────────────────────────
+  async function initNonlin2(panel) {
+    const d = await loadJSON('nonlinear2.json');
+    const byKey = Object.fromEntries(d.orbits.map(o => [o.key, o]));
+    const color = { '1': COL.accent, '0': COL.warm, abs: '#737373' };
+    const shown = ['1', '0', 'abs'];
+    const series = [];
+    for (const k of shown) {
+      const o = byKey[k];
+      series.push({ name: '', color: '#a3a3a3', x: [0, 0.017], y: [o.pred, o.pred] });
+      series.push({ name: '', color: color[k], x: o.xs, y: o.ratio_e03, dots: true });
+    }
+    lineChart(panel.querySelector('.cv-chart'), series,
+      { xlab: 'm / p', ylab: '근일점 이동 ÷ 6πm/p', xmin: 0, xmax: 0.017, ymin: 0, ymax: 1.4, legend: false, fmtY: v => v.toFixed(1) });
+
+    function draw(key) {
+      const o = byKey[key];
+      const { ctx, w, h } = hiDPI(panel.querySelector('.cv-orbit'));
+      ctx.clearRect(0, 0, w, h);
+      // 궤도는 p 단위. 장미 무늬는 중심 질량에서 원일점 거리 1/(1-e) = 2 안을 채운다
+      const e = 0.5, R = 0.46 * w / 2, cx = w / 2, cy = h / 2;
+      ctx.strokeStyle = '#444'; ctx.setLineDash([4, 4]); ctx.beginPath();
+      for (let k = 0; k <= 200; k++) {
+        const f = 2 * Math.PI * k / 200, r = 1 / (1 + e * Math.cos(f));
+        const x = cx + r * Math.cos(f) * R, y = cy - r * Math.sin(f) * R;
+        k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = color[key]; ctx.lineWidth = 1.3; ctx.beginPath();
+      o.rose.forEach(([x, y], k) => k ? ctx.lineTo(cx + x * R, cy - y * R) : ctx.moveTo(cx + x * R, cy - y * R));
+      ctx.stroke(); ctx.lineWidth = 1;
+      ctx.fillStyle = COL.text; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill();
+      const deg = o.rose_dphi * 180 / Math.PI;
+      panel.querySelector('.readout').textContent = o.name + ' · β = ' + o.beta.toFixed(3) + ' · 한 바퀴 ' + deg.toFixed(1) +
+        '° 앞섬 · m/p → 0 계수 ' + o.c0_e03.toFixed(4) + ' (예측 ' + o.pred.toFixed(4) + ')';
+    }
+    panel.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+      panel.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
+      draw(b.dataset.case);
+    }));
+    draw('1');
+    panel.querySelector('.lattice-beta').textContent = '3D 격자에서 잰 정적 장의 β: ' +
+      d.lattice.rows.map(r => r.rule + ' ' + r.beta.toFixed(3) + '(예측 ' + r.beta_pred.toFixed(3) + ')').join(' · ');
+  }
+
   // ── 격자 보존 오차 ─────────────────────────────────
   async function initCons(panel) {
     const d = await loadJSON('conservation.json');
@@ -553,7 +598,7 @@
   }
 
   // ── 시작: 패널은 화면 가까이 오면 데이터를 읽는다 ──────
-  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, field: initField, power: initPower, coupled: initCoupled, cons: initCons, fail: initFail };
+  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, field: initField, power: initPower, coupled: initCoupled, nonlin2: initNonlin2, cons: initCons, fail: initFail };
   function start(panel) {
     const s = panel.querySelector('.status');
     loaders[panel.dataset.load](panel).then(() => { if (!s.classList.contains('err')) s.textContent = ''; }, err => fail(panel, err));

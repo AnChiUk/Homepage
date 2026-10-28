@@ -187,6 +187,32 @@
       <p class="status">불러오는 중…</p>
     </article>
 
+    <article class="panel" id="p-nonlin2" data-load="nonlin2">
+      <header>
+        <span class="tag">비선형 2</span>
+        <h3>장 자신의 하중을 끝까지 되먹이면 근일점 이동이 일반상대성이론과 같다</h3>
+        <p>막 변형은 재료값을 그 자리 값에 대한 비율로 바꾸고(절대 시계가 없으므로), 정적 장도 자기가 바꾼 막을 지난다. 이 둘만으로 장 자신의 하중(시계 쪽 + 공간 쪽)이 원천이 되고, β_PPN = (3+γ)/4가 나온다. γ = 1이면 β = 1이고, 파속 궤도의 근일점 이동은 6πm/p의 1.0000배다. 재료값을 절대량으로 바꾸는 대조군은 β = 1/2, 근일점 이동 7/6배다.</p>
+      </header>
+      <div class="seg" role="group" aria-label="규칙">
+        <button class="on" data-case="1">규칙 γ = 1</button>
+        <button data-case="0">규칙 γ = 0</button>
+        <button data-case="abs">절대 변화</button>
+      </div>
+      <div class="views two">
+        <figure>
+          <canvas class="cv-orbit" width="360" height="360"></canvas>
+          <figcaption>m/p = 0.03, 이심률 0.5 파속 궤도 여섯 바퀴(효과를 키운 값). 점선은 이동이 없는 타원</figcaption>
+        </figure>
+        <figure>
+          <canvas class="cv-chart chart" width="420" height="360"></canvas>
+          <figcaption>근일점 이동 ÷ 6πm/p (점, 이심률 0.3). 가로선은 (2+2γ−β)/3 예측. 파랑 규칙 γ = 1, 주황 규칙 γ = 0, 짙은 회색 절대 변화</figcaption>
+        </figure>
+      </div>
+      <div class="readout"></div>
+      <p class="lattice-beta"></p>
+      <p class="status">불러오는 중…</p>
+    </article>
+
     <div class="pair">
       <!-- 격자 보존 오차 -->
       <article class="panel" id="p-cons" data-load="cons">
