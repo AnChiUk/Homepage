@@ -404,6 +404,8 @@
       md = md.replace(/^# .*\n+/, '').replace(/^\d{4}-\d{2}-\d{2} 기준\s*\n/, '');
       // 먼 곳 진동수 기호 ω*의 별표가 굵게 표시와 섞이지 않게 한다.
       md = md.replace(/ω\*/g, 'ω\\*');
+      // 문서의 ~ 는 모두 범위(1.00~1.01)이므로 취소선으로 읽히지 않게 한다.
+      md = md.replace(/~/g, '\\~');
       marked.use({
         renderer: {
           code(code, lang) {

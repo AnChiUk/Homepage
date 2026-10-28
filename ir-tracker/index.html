@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>저가 IR 트래커 기획</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a href="../index.html" class="back-btn">← 목록으로</a>
+      <h1>저가 IR 페이스·바디 트래커 기획</h1>
+      <p class="lead">적외선 카메라 모듈 2대와 패턴 밴드로, 드리프트 없는 광학 바디 트래커를 소비자가 50만 원 이하에 만든다.</p>
+      <p class="meta">2026-10-28 기준 · <a href="simulator.html">설계 시뮬레이터 열기 →</a></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="summary">
+      <div class="stat"><span class="num">99~100%</span><span class="lbl">패턴 밴드 + 정면 모듈 2대의 360°×동작 추적 커버리지 (반사 구슬은 79~85%)</span></div>
+      <div class="stat"><span class="num">88~89%</span><span class="lbl">같은 배치에서 이웃 3칸으로 어느 밴드인지 맞힌 비율 (최악 조건)</span></div>
+      <div class="stat"><span class="num">10만~28만 원</span><span class="lbl">모듈 2개 + 밴드·포장 부품 원가 추정 (목표 15만~20만 원 이하)</span></div>
+    </section>
+
+    <a class="sim-card" href="simulator.html">
+      <span class="tag">시뮬레이터</span>
+      <strong>IR 트래커 설계 시뮬레이터</strong>
+      <span>3D 몸에 동작을 넣고 360° 돌리며 마커가 어디서 가려지는지 계산한다. 모듈 배치, 밴드 점 패턴, 원가 계산기까지 직접 바꿔 볼 수 있다.</span>
+    </a>
+
+    <nav class="toc" aria-label="목차" id="toc"></nav>
+
+    <article id="doc" class="doc"><p class="status">문서를 불러오는 중…</p></article>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <script>
+  // 기획 문서(doc/*.md)를 그대로 읽어 렌더링한다. 문서만 고치면 페이지에 바로 반영된다.
+  (async function () {
+    const el = document.getElementById('doc');
+    const src = 'doc/' + encodeURIComponent('저가 IR 페이스·바디 트래커 기획 정리.md');
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(res.status);
+      // 제목과 기준일은 페이지 머리에 이미 있다.
+      const md = (await res.text()).replace(/^# .*\n+/, '').replace(/^\d{4}-\d{2}-\d{2} 기준\s*\n/, '')
+        .replace(/~/g, '\\~');        // 문서의 ~ 는 모두 범위(45만~51만)이므로 취소선으로 읽히지 않게 한다
+      el.innerHTML = marked.parse(md);
+      el.querySelectorAll('a[href^="http"]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+      const toc = document.getElementById('toc');
+      el.querySelectorAll('h2').forEach(h => {
+        const a = document.createElement('a');
+        a.href = '#' + h.id; a.textContent = h.textContent;
+        toc.appendChild(a);
+      });
+    } catch (err) {
+      el.innerHTML = '<p class="status err">' + (location.protocol === 'file:'
+        ? '문서를 읽으려면 웹 서버로 열어야 합니다 (예: 저장소 폴더에서 python -m http.server).'
+        : '문서를 불러오지 못했습니다: ' + err.message) + '</p>';
+    }
+  })();
+  </script>
+</body>
+</html>

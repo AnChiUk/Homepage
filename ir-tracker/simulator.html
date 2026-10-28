@@ -1,0 +1,602 @@
+<!doctype html><html lang="ko"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>IR 트래커 설계 시뮬레이터</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 실험실 계측기. 요약 수치 → 3D 뷰+조작 → 360°×동작 그래프 → 마커 표 → 원가 */
+:root{
+  --bg:#edf1f3; --panel:#ffffff; --fg:#15222a; --muted:#5a6a73; --line:#c9d3d9; --grid:#dde5e9;
+  --accent:#a8326a; --good:#1d8a6c; --warn:#b97f0f; --bad:#c0392b; --body:#9aa9b1; --scene:#e4eaed;
+  --sans:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1519; --panel:#172027; --fg:#e2e9ed; --muted:#8e9fa8; --line:#33414c; --grid:#222d35;
+  --accent:#e2689f; --good:#3cc39b; --warn:#e3b03d; --bad:#ef6b5e; --body:#6b7d88; --scene:#121a1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --panel:#172027; --fg:#e2e9ed; --muted:#8e9fa8; --line:#33414c; --grid:#222d35;
+  --accent:#e2689f; --good:#3cc39b; --warn:#e3b03d; --bad:#ef6b5e; --body:#6b7d88; --scene:#121a1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:1.55rem;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1.1rem;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:65ch}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--mono);font-size:1.2rem;font-variant-numeric:tabular-nums;font-weight:500;overflow-wrap:anywhere}
+.stat span{font-size:.78rem;color:var(--muted)}
+.view{position:relative;border-radius:8px;overflow:hidden;background:var(--scene)}
+.view canvas{display:block;width:100%;touch-action:none;cursor:grab}
+.view .tag{position:absolute;left:10px;top:8px;font-family:var(--mono);font-size:.72rem;color:var(--muted);pointer-events:none}
+#chart{display:block;width:100%}
+.ctrls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+@media (max-width:480px){.ctrls{grid-template-columns:minmax(0,1fr)}}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:.82rem;color:var(--muted);min-width:0}
+label.f .row{display:flex;justify-content:space-between;gap:8px}
+label.f output{font-family:var(--mono);color:var(--fg);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number],select{width:100%;font:inherit;font-family:var(--mono);font-size:.9rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:.85rem;padding:7px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.check{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.lbl{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.dash{border-radius:0;height:2px;width:14px;vertical-align:3px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:.78rem}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.75rem;font-weight:500;border:1px solid currentColor}
+.p-good{color:var(--good)}.p-ok{color:var(--warn)}.p-imu{color:var(--accent)}.p-bad{color:var(--bad)}
+.rate{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.rate .track{width:70px;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
+.rate .track div{height:100%}
+.costgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}
+@media (max-width:620px){.costgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bar{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar div{height:100%;min-width:0}
+.verdict{border-left:4px solid var(--good);padding:10px 14px;background:var(--bg);border-radius:0 8px 8px 0}
+.verdict.bad{border-left-color:var(--bad)}.verdict.warn{border-left-color:var(--warn)}
+.verdict p{margin:2px 0}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:.88rem}
+.kv span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.kv .tot{font-weight:700;border-top:1px solid var(--line);padding-top:4px}
+#modlist{display:flex;flex-direction:column;gap:8px}
+.err{padding:12px;color:var(--bad)}
+[hidden]{display:none!important}
+</style>
+
+<div class="wrap">
+  <header>
+    <a href="./" style="display:inline-block;margin-bottom:10px;color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500">← IR 트래커 기획</a>
+    <div class="eyebrow">Optical IR tracker · v0.2 · 3D</div>
+    <h1>IR 트래커 설계 시뮬레이터</h1>
+    <p class="sub">카메라 모듈(모듈당 센서 3개)의 높이와 방향을 정하고, 몸을 돌리거나 동작을 재생하며 마커가 어디서 가려지는지 3D로 계산해요. 원가 계산은 위 배치의 모듈 수를 그대로 가져가요.</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid2">
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <h2>3D 뷰</h2>
+        <span class="hint">끌어서 시점 회전 · 휠·두 손가락으로 확대</span>
+      </div>
+      <div class="view" id="view"><canvas id="c3"></canvas><span class="tag">바닥 격자 0.5 m</span></div>
+      <div class="legend">
+        <span><i style="background:var(--good)"></i>2대 이상 교차</span>
+        <span><i style="background:var(--warn)"></i>한 모듈 단독 추적</span>
+        <span><i style="background:var(--accent)"></i>IMU 보완</span>
+        <span><i style="background:var(--bad)"></i>추적 불가</span>
+        <span><i style="background:var(--muted)"></i>가려진 점</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>설정</h2>
+      <div><div class="lbl">마커 방식</div><div class="btns" id="modes">
+        <button type="button" data-mode="ball">반사 구슬 (부위당 1개)</button><button type="button" data-mode="band">패턴 밴드 (둘레에 점)</button></div></div>
+      <div id="bandctl" style="display:flex;flex-direction:column;gap:10px">
+        <div class="ctrls">
+          <label class="f" for="pitch"><span class="row">칸 간격 (둘레 방향) <output id="pitchO"></output></span><input id="pitch" type="range" min="2" max="6" step="0.1" value="3.5"></label>
+          <label class="f" for="rowgap"><span class="row">두 줄 사이 간격 <output id="rowgapO"></output></span><input id="rowgap" type="range" min="1.5" max="5" step="0.1" value="3"></label>
+          <label class="f" for="dotd"><span class="row">점 지름 <output id="dotdO"></output></span><input id="dotd" type="range" min="0.6" max="3" step="0.1" value="1.5"></label>
+          <label class="f" for="tilt"><span class="row">점이 보이는 최대 기울기 <output id="tiltO"></output></span><input id="tilt" type="range" min="40" max="85" value="70"></label>
+          <label class="f" for="mingap"><span class="row">점 사이 최소 빈틈 <output id="mingapO"></output></span><input id="mingap" type="range" min="0.5" max="4" step="0.5" value="2"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="sym" checked> 좌우 밴드는 같은 패턴 (몸 구조로 좌우 구분)</label>
+        <div id="patterns" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+      <div class="kv" id="cmp"></div>
+      <div><div class="lbl">동작</div><div class="btns" id="motions"></div></div>
+      <div class="btns">
+        <label class="check"><input type="checkbox" id="play" checked> 동작 재생</label>
+        <label class="check"><input type="checkbox" id="spin"> 자동 회전</label>
+        <label class="check"><input type="checkbox" id="imu"> 마커에 IMU 보조</label>
+      </div>
+      <label class="f" for="yaw"><span class="row">몸 방향 <output id="yawO"></output></span><input id="yaw" type="range" min="0" max="359" value="0"></label>
+      <div><div class="lbl">배치 프리셋</div><div class="btns" id="presets"></div></div>
+      <div id="modlist"></div>
+      <div class="ctrls">
+        <label class="f" for="dist"><span class="row">모듈 거리 <output id="distO"></output></span><input id="dist" type="range" min="1" max="4" step="0.1" value="2.2"></label>
+        <label class="f" for="hgt"><span class="row">모듈 높이 <output id="hgtO"></output></span><input id="hgt" type="range" min="0.3" max="2.6" step="0.1" value="2.0"></label>
+        <label class="f" for="fov"><span class="row">센서 가로 화각 <output id="fovO"></output></span><input id="fov" type="range" min="40" max="150" value="90"></label>
+        <label class="f" for="base"><span class="row">센서 간격 <output id="baseO"></output></span><input id="base" type="range" min="1" max="15" step="0.5" value="6"></label>
+        <label class="f" for="res"><span class="row">가로 해상도 <output id="resO"></output></span>
+          <select id="res"><option>640</option><option selected>1280</option><option>1920</option></select></label>
+        <label class="f" for="fps"><span class="row">센서 1개 fps <output id="fpsO"></output></span><input id="fps" type="range" min="30" max="240" step="10" value="60"></label>
+        <label class="f" for="exp"><span class="row">노출 시간 <output id="expO"></output></span><input id="exp" type="range" min="0.1" max="8" step="0.1" value="1"></label>
+        <label class="f" for="spd"><span class="row">팔 휘두르는 속도 <output id="spdO"></output></span><input id="spd" type="range" min="0.5" max="10" step="0.5" value="4"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="stagger" checked> 센서 3개 엇갈림 촬영</label>
+      <div class="kv" id="timing"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>360° 회전 × 동작 커버리지</h2>
+    <p class="hint">몸을 10°씩 돌리고 각 방향에서 동작 한 주기를 8프레임으로 나눠 계산해요. 선은 8프레임 평균, 점선은 그중 가장 나쁜 프레임이에요. 세로선은 현재 몸 방향이에요.</p>
+    <canvas id="chart" aria-label="몸 방향별 커버리지 그래프"></canvas>
+    <div class="legend">
+      <span><i style="background:var(--good)"></i>2대 이상 교차로 3D</span>
+      <span><i style="background:var(--warn)"></i>한 모듈 단독 포함 3D</span>
+      <span><i class="dash" style="background:var(--bad)"></i>최악 프레임</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>마커별 상태</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>부위</th><th>보는 모듈</th><th id="thSc">보는 센서</th><th>현재 상태</th><th style="text-align:right">깊이 오차(추정)</th><th style="text-align:right">360°×동작 추적률</th><th style="text-align:right">판별률</th></tr></thead>
+      <tbody id="mtable"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel">
+    <div class="eyebrow">원가 · 손익</div>
+    <h2>50만 원 안에 들어가는가</h2>
+    <p class="hint">부품 단가는 모두 추정 입력값이에요. 실제 견적을 받으면 바꿔 넣으세요. 모듈 수(<b id="cMods"></b>)와 모듈당 센서 수(3)는 위 배치에서 가져와요.</p>
+    <div class="btns" id="cpresets"></div>
+    <div class="costgrid" id="cin"></div>
+    <div class="bar" id="cbar"></div>
+    <div class="legend" id="cleg"></div>
+    <div class="grid2">
+      <div class="kv" id="ckv"></div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </section>
+
+  <p class="hint">모델의 한계: 몸은 캡슐 13개로 단순화했고, 동작은 손으로 만든 근사 동작이에요. 반사 구슬은 사방에서 보인다고 가정했고, 밴드의 점은 평평해서 기울기 제한을 넘으면 안 보이게 했어요. 밴드는 한 모듈에서 점 3개 이상이 보이면 모양을 아는 점 배치로 위치·방향을 계산(PnP)한다고 가정해요. 판별률은 추적된 순간 중 한 모듈이 인접한 칸을 필요한 수만큼 연속으로 읽어 어느 밴드인지 맞힐 수 있었던 비율이에요. 한 칸은 점이 크기·빈틈 기준을 넘고 위아래 줄이 구분될 때만 읽힌다고 봤고, 직전 프레임 정보는 쓰지 않은 최악 조건이에요. 깊이 오차는 0.2픽셀 검출 정밀도를 가정한 이론값이에요. 센서 세로 화각은 4:3 비율로 계산해요.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+const man=n=>(n/10000).toLocaleString('ko-KR',{maximumFractionDigits:1})+'만 원';
+const D=Math.PI/180;
+// ---- 벡터 ----
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+ mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],len=a=>Math.sqrt(dot(a,a)),
+ nrm=a=>{const l=len(a)||1;return mul(a,1/l)},cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+ clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function segDist2(p1,q1,p2,q2){
+  const d1=sub(q1,p1),d2=sub(q2,p2),r=sub(p1,p2),a=dot(d1,d1),e=dot(d2,d2),f=dot(d2,r);let s,t;
+  if(a<1e-9&&e<1e-9)return dot(r,r);
+  if(a<1e-9){s=0;t=clamp(f/e,0,1);}else{const c=dot(d1,r);
+    if(e<1e-9){t=0;s=clamp(-c/a,0,1);}else{const b=dot(d1,d2),den=a*e-b*b;
+      s=den>1e-12?clamp((b*f-c*e)/den,0,1):0;t=(b*s+f)/e;
+      if(t<0){t=0;s=clamp(-c/a,0,1);}else if(t>1){t=1;s=clamp((b-c)/a,0,1);}}}
+  const dd=sub(add(p1,mul(d1,s)),add(p2,mul(d2,t)));return dot(dd,dd);}
+
+// ---- 몸 모델 (x 오른쪽, y 위, z 정면) ----
+const MNAMES=['가슴','허리(등)','왼팔꿈치','오른팔꿈치','왼무릎','오른무릎','왼발등','오른발등'];
+const MOTIONS={
+  '서 있기':ph=>{const w=ph*2*Math.PI,s=Math.sin(w);return{L:{hf:0,ha:4,kf:3},R:{hf:0,ha:4,kf:3},LA:{sf:5+3*s,sa:12,ef:15},RA:{sf:5-3*s,sa:12,ef:15}}},
+  '걷기':ph=>{const w=ph*2*Math.PI,s=Math.sin(w);return{
+    L:{hf:25*s,ha:3,kf:8+35*Math.max(0,Math.sin(w-0.7))},R:{hf:-25*s,ha:3,kf:8+35*Math.max(0,Math.sin(w+Math.PI-0.7))},
+    LA:{sf:-22*s,sa:10,ef:25},RA:{sf:22*s,sa:10,ef:25}}},
+  '팔 휘두르기':ph=>{const w=ph*2*Math.PI,a=Math.max(0,Math.sin(w)),b=Math.max(0,-Math.sin(w));return{
+    L:{hf:5,ha:9,kf:12},R:{hf:-5,ha:9,kf:12},
+    LA:{sf:35+55*a,sa:18,ef:105-90*a},RA:{sf:35+55*b,sa:18,ef:105-90*b}}},
+  '쪼그려 앉기':ph=>{const d=(1-Math.cos(ph*2*Math.PI))/2;return{
+    L:{hf:95*d,ha:10,kf:3+122*d},R:{hf:95*d,ha:10,kf:3+122*d},LA:{sf:5+80*d,sa:10,ef:10},RA:{sf:5+80*d,sa:10,ef:10}}},
+  '춤·발차기':ph=>{const w=ph*2*Math.PI,s=Math.sin(w),u=0.5+0.5*s;return{
+    L:{hf:55*Math.max(0,s),ha:5,kf:5+65*Math.max(0,s)},R:{hf:55*Math.max(0,-s),ha:5,kf:5+65*Math.max(0,-s)},
+    LA:{sf:10,sa:30+110*u,ef:40},RA:{sf:10,sa:30+110*(1-u),ef:40}}}
+};
+// ---- 밴드 점 패턴 설계: 칸마다 1=위 줄, 2=아래 줄, 3=두 줄 모두 ----
+const GROUPS_SYM=[['가슴',[0]],['허리',[1]],['팔 (좌우 공통)',[2,3]],['허벅지 (좌우 공통)',[4,5]],['발목 (좌우 공통)',[6,7]]];
+const GROUPS_ALL=[['가슴',[0]],['허리',[1]],['왼팔',[2]],['오른팔',[3]],['왼허벅지',[4]],['오른허벅지',[5]],['왼발목',[6]],['오른발목',[7]]];
+let PAT={W:2,seq:[],groups:[]};
+function genPatterns(){
+  const groups=S.sym?GROUPS_SYM:GROUPS_ALL;
+  const flipS=w=>w.split('').reverse().map(c=>c==='1'?'2':c==='2'?'1':'3').join('');
+  const motifs=[];const seen=new Set();
+  for(let L=1;L<=6;L++){const tot=3**L;for(let x=0;x<tot;x++){let m=[],y=x;for(let i=0;i<L;i++){m.push(1+y%3);y=Math.floor(y/3);}
+    const str=m.join('');let prim=true;for(let d=1;d<L;d++)if(L%d===0&&str===str.slice(0,d).repeat(L/d))prim=false;if(!prim)continue;
+    let can=str;for(let r=1;r<L;r++){const t=str.slice(r)+str.slice(0,r);if(t<can)can=t;}if(seen.has(can))continue;seen.add(can);motifs.push(can.split('').map(Number));}}
+  for(let W=2;W<=6;W++){const used=new Set(),pick=[];let ok=true;
+    for(const g of groups){let found=null;
+      for(const m of motifs){if(pick.includes(m))continue;const ws=new Set();
+        for(let i=0;i<m.length;i++){let w='';for(let j=0;j<W;j++)w+=m[(i+j)%m.length];ws.add(w);ws.add(flipS(w));}
+        if([...ws].some(w=>used.has(w)))continue;found=m;ws.forEach(w=>used.add(w));break;}
+      if(!found){ok=false;break;}pick.push(found);}
+    if(ok){const seq=[];groups.forEach((g,gi)=>g[1].forEach(b=>seq[b]=pick[gi]));PAT={W,seq,groups,pick};return;}}
+}
+function pose(motion,ph){
+  const P=MOTIONS[motion](ph),py=0.95,caps=[],marks=[];
+  caps.push([[-0.07,py-0.03,0],[-0.07,py+0.45,0],0.11],[[0.07,py-0.03,0],[0.07,py+0.45,0],0.11]);
+  caps.push([[0,py+0.67,0.02],[0,py+0.67,0.02],0.115]);
+  marks.push([0,py+0.35,0.135],[0,py+0.03,-0.135]);
+  const legs=[],arms=[],bands=[];
+  let bi=0;
+  function ring(c,ax,r1,r2,ref){let u=cross(ax,ref);if(len(u)<0.2)u=cross(ax,[1,0,0]);u=nrm(u);const v=cross(ax,u),dots=[],slots=[];
+    const code=PAT.seq[bi++]||[3],Lc=code.length,circ=2*Math.PI*Math.sqrt((r1*r1+r2*r2)/2);
+    let n=Math.max(Lc,Math.round(circ/S.pitch/Lc)*Lc);while(n<3)n+=Lc;
+    for(let j=0;j<n;j++){const t=2*Math.PI*j/n,co=Math.cos(t),si=Math.sin(t),pt=add(c,add(mul(u,r1*co),mul(v,r2*si))),nn=nrm(add(mul(u,co/r1),mul(v,si/r2)));
+      const sl={sym:code[j%Lc],top:add(pt,mul(ax,S.rowgap/2)),bot:add(pt,mul(ax,-S.rowgap/2)),n:nn,di:[]};
+      if(sl.sym&1){sl.di.push(dots.length);dots.push({p:sl.top,n:nn});}
+      if(sl.sym&2){sl.di.push(dots.length);dots.push({p:sl.bot,n:nn});}
+      slots.push(sl);}
+    return{c,dots,slots};}
+  bands.push(ring([0,py+0.33,0],[0,1,0],0.19,0.13,[0,0,1]),ring([0,py+0.03,0],[0,1,0],0.19,0.13,[0,0,1]));
+  const armB=[],kneeB=[],footB=[];
+  [['LA',-1],['RA',1]].forEach(([k,sd])=>{const p=P[k],S=[sd*0.2,py+0.47,0],f=p.sf*D,ab=p.sa*D,e=p.ef*D;
+    const d1=[sd*Math.sin(ab),-Math.cos(ab)*Math.cos(f),Math.cos(ab)*Math.sin(f)],E=add(S,mul(d1,0.29));
+    const f2=f+e,d2=[sd*Math.sin(ab),-Math.cos(ab)*Math.cos(f2),Math.cos(ab)*Math.sin(f2)],W=add(E,mul(d2,0.27));
+    caps.push([S,E,0.05],[E,W,0.042]);armB.push(ring(add(E,mul(d1,-0.07)),d1,0.062,0.062,[0,0,1]));
+    const ref=nrm([sd*0.6,0,-0.8]),n=nrm(sub(ref,mul(d1,dot(ref,d1))));arms.push(add(add(E,mul(d1,-0.06)),mul(n,0.08)));});
+  [['L',-1],['R',1]].forEach(([k,sd])=>{const p=P[k],H=[sd*0.1,py-0.03,0],a=p.hf*D,b=p.ha*D,kf=p.kf*D;
+    const d1=[sd*Math.sin(b),-Math.cos(b)*Math.cos(a),Math.cos(b)*Math.sin(a)],K=add(H,mul(d1,0.45));
+    const a2=a-kf,d2=[sd*Math.sin(b),-Math.cos(b)*Math.cos(a2),Math.cos(b)*Math.sin(a2)],A=add(K,mul(d2,0.43));
+    const fa=a2+80*D,T=add(A,mul([0,-Math.cos(fa),Math.sin(fa)],0.16)),fn=[0,Math.cos(a2-10*D),-Math.sin(a2-10*D)];
+    caps.push([H,K,0.075],[K,A,0.055],[A,T,0.04]);
+    kneeB.push(ring(add(K,mul(d1,-0.08)),d1,0.087,0.087,[0,0,1]));footB.push(ring(add(A,mul(d2,-0.07)),d2,0.067,0.067,[0,0,1]));
+    const ref=nrm([0,0.3,1]),n=nrm(sub(ref,mul(d1,dot(ref,d1))));
+    legs.push({knee:add(add(K,mul(d1,-0.07)),mul(n,0.095)),foot:add(add(A,mul(sub(T,A),0.45)),mul(fn,0.075)),low:Math.min(A[1],T[1])-0.04});});
+  marks.push(arms[0],arms[1],legs[0].knee,legs[1].knee,legs[0].foot,legs[1].foot);
+  const shift=-Math.min(legs[0].low,legs[1].low);
+  const sh=v=>[v[0],v[1]+shift,v[2]];
+  bands.push(armB[0],armB[1],kneeB[0],kneeB[1],footB[0],footB[1]);
+  return{caps:caps.map(c=>[sh(c[0]),sh(c[1]),c[2]]),marks:marks.map(sh),bands:bands.map(b=>({c:sh(b.c),dots:b.dots.map(d=>({p:sh(d.p),n:d.n})),slots:b.slots.map(q=>({sym:q.sym,top:sh(q.top),bot:sh(q.bot),n:q.n,di:q.di}))}))};
+}
+const rotY=(p,y)=>{const c=Math.cos(y),s=Math.sin(y);return[p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c]};
+function worldPose(motion,ph,yaw){const p=pose(motion,ph);
+  return{caps:p.caps.map(c=>[rotY(c[0],yaw),rotY(c[1],yaw),c[2]]),marks:p.marks.map(m=>rotY(m,yaw)),
+    bands:p.bands.map(b=>({c:rotY(b.c,yaw),dots:b.dots.map(d=>({p:rotY(d.p,yaw),n:rotY(d.n,yaw)})),
+      slots:b.slots.map(q=>({sym:q.sym,top:rotY(q.top,yaw),bot:rotY(q.bot,yaw),n:rotY(q.n,yaw),di:q.di}))}))};}
+
+// ---- 카메라 모듈 ----
+const PRESETS={'정면 2대':[-35,35],'대각 2대':[-45,135],'앞뒤 2대':[0,180],'삼각 3대':[0,120,240],'사방 4대':[45,135,225,315],'정면 1대':[0]};
+let presetName='정면 2대';
+let mods=PRESETS[presetName].map(az=>({az}));
+const S={yaw:0,motion:'걷기',ph:0,play:true,spin:false,imu:false,dist:2.2,hgt:2.0,fov:90,base:0.06,res:1280,fps:60,exp:1,spd:4,stagger:true,range:5,aim:[0,1.0,0],mode:'ball',tilt:70,pitch:0.035,rowgap:0.03,dotd:0.015,mingap:2,sym:true};
+function modFrame(m){const P=[Math.sin(m.az*D)*S.dist,S.hgt,Math.cos(m.az*D)*S.dist];
+  const F=nrm(sub(S.aim,P)),R=nrm(cross(F,[0,1,0])),U=cross(R,F);
+  return{P,F,R,U,sens:[-1,0,1].map(i=>add(P,mul(R,i*S.base)))};}
+const focal=()=>(S.res/2)/Math.tan(S.fov/2*D);
+
+function evalFrame(wp,frames,mode){return (mode||S.mode)==='band'?evalBands(wp,frames):evalBalls(wp,frames);}
+function evalBands(wp,frames){
+  const tH=Math.tan(S.fov/2*D),tV=tH*0.75,f=focal(),sd=0.2,ct=Math.cos(S.tilt*D);
+  return wp.bands.map((B,mi)=>{
+    const seen=[],dv=B.dots.map(()=>false);let id=false,bestRun=0;
+    frames.forEach((Fr,k)=>{let nd=0,st=0;const vp=[],vis=B.dots.map(()=>false);
+      B.dots.forEach((d,di)=>{let c=0;
+        for(const sp of Fr.sens){const v=sub(d.p,sp),z=dot(v,Fr.F);if(z<=0.05)continue;const l=len(v);if(l>S.range)continue;
+          if(Math.abs(dot(v,Fr.R))/z>tH||Math.abs(dot(v,Fr.U))/z>tV)continue;
+          if(-dot(d.n,v)/l<ct)continue;
+          let blk=false;for(const cp of wp.caps){const r=cp[2]*0.97;if(segDist2(sp,d.p,cp[0],cp[1])<r*r){blk=true;break;}}
+          if(!blk)c++;}
+        if(c){nd++;st=Math.max(st,c);vp.push(d.p);dv[di]=true;vis[di]=true;}});
+      if(!nd)return;
+      let span=0;for(let i=0;i<vp.length;i++)for(let j=i+1;j<vp.length;j++)span=Math.max(span,len(sub(vp[i],vp[j])));
+      seen.push({k,n:nd,st,span,dir:sub(B.c,Fr.P)});
+      // 판독: 칸별로 점이 모두 보이고, 점이 충분히 크고, 위아래 줄과 이웃 칸이 빈틈으로 구분되는가
+      const proj=p=>{const v=sub(p,Fr.P),z=dot(v,Fr.F);return[f*dot(v,Fr.R)/z,f*dot(v,Fr.U)/z,z];};
+      const n=B.slots.length,rd=new Array(n),cen=new Array(n),px=new Array(n);
+      B.slots.forEach((q,j)=>{rd[j]=false;if(!q.di.every(di=>vis[di]))return;
+        const a=proj(q.top),b=proj(q.bot),z=(a[2]+b[2])/2,dp=S.dotd*f/z,v=sub(add(q.top,q.bot),mul(Fr.P,2)),fc=-dot(q.n,nrm(v));
+        if(dp*fc<1.2)return;if(Math.hypot(a[0]-b[0],a[1]-b[1])<dp+S.mingap)return;
+        rd[j]=true;cen[j]=[(a[0]+b[0])/2,(a[1]+b[1])/2];px[j]=dp;});
+      let run=0,best=0;
+      for(let t=0;t<2*n;t++){const j=t%n,pj=(j+n-1)%n;
+        if(!rd[j]){run=0;continue;}
+        if(run>0&&rd[pj]&&Math.hypot(cen[j][0]-cen[pj][0],cen[j][1]-cen[pj][1])>=Math.max(px[j],px[pj])+S.mingap)run++;else run=1;
+        best=Math.max(best,Math.min(run,n));}
+      bestRun=Math.max(bestRun,best);if(best>=PAT.W)id=true;});
+    let st,err=null;
+    if(seen.length>=2){st='good';let best=Infinity;
+      for(let i=0;i<seen.length;i++)for(let j=i+1;j<seen.length;j++){const a=seen[i].dir,b=seen[j].dir,la=len(a),lb=len(b);
+        const cs=dot(a,b)/(la*lb),sn=Math.max(0.05,Math.sqrt(Math.max(0,1-cs*cs)));best=Math.min(best,sd*Math.max(la,lb)/f/sn);}
+      err=best;}
+    else if(seen.length===1&&(seen[0].n>=3||seen[0].st>=2)){st='ok';const s0=seen[0],z=len(s0.dir);let e=Infinity;
+      if(s0.n>=3&&s0.span>0.01)e=Math.min(e,z*z*sd/(f*s0.span));if(s0.st>=2)e=Math.min(e,z*z*sd/(f*S.base));err=e;}
+    else st=S.imu?'imu':'bad';
+    return{mi,M:B.c,seen,sc:dv.filter(Boolean).length,nd:B.dots.length,st,err,dv,id,run:bestRun};});
+}
+function evalBalls(wp,frames){
+  const tH=Math.tan(S.fov/2*D),tV=tH*0.75,f=focal(),sd=0.2;
+  return wp.marks.map((M,mi)=>{
+    const seen=[];let sc=0;
+    frames.forEach((Fr,k)=>{
+      const vis=Fr.sens.map(sp=>{const v=sub(M,sp),z=dot(v,Fr.F);if(z<=0.05)return false;
+        if(len(v)>S.range)return false;
+        if(Math.abs(dot(v,Fr.R))/z>tH||Math.abs(dot(v,Fr.U))/z>tV)return false;
+        for(const c of wp.caps){const r=c[2]*0.97;if(segDist2(sp,M,c[0],c[1])<r*r)return false;}
+        return true;});
+      const n=vis.filter(Boolean).length;
+      if(n){seen.push({k,vis,n,dir:sub(M,Fr.P)});sc+=n;}
+    });
+    let st,err=null;
+    if(seen.length>=2){st='good';let best=Infinity;
+      for(let i=0;i<seen.length;i++)for(let j=i+1;j<seen.length;j++){const a=seen[i].dir,b=seen[j].dir,la=len(a),lb=len(b);
+        const cs=dot(a,b)/(la*lb),sn=Math.max(0.05,Math.sqrt(Math.max(0,1-cs*cs)));best=Math.min(best,sd*Math.max(la,lb)/f/sn);}
+      err=best;}
+    else if(seen.length===1&&seen[0].n>=2){st='ok';const v=seen[0].vis,B=(v[0]&&v[2])?2*S.base:S.base,z=len(seen[0].dir);err=z*z*sd/(f*B);}
+    else st=S.imu?'imu':'bad';
+    return{mi,M,seen,sc,st,err};});
+}
+
+// ---- 360° × 동작 스윕 ----
+let sweep=[],markerRate=new Array(8).fill(0),fullRate=0,idRate=new Array(8).fill(0),idAll=0;
+const NPH=8;
+const cmp={ball:0,band:0};
+function computeSweep(){
+  const a=runSweep(S.mode);sweep=a.sweep;markerRate=a.markerRate;fullRate=a.fullRate;idRate=a.idRate;idAll=a.idAll;cmp[S.mode]=a.avg;
+  const o=S.mode==='ball'?'band':'ball';cmp[o]=runSweep(o).avg;}
+function runSweep(mode){
+  const frames=mods.map(modFrame),sweep=[];let markerRate=new Array(8).fill(0),idC=new Array(8).fill(0),trC=new Array(8).fill(0),full=0,tot=0;
+  for(let a=0;a<360;a+=10){let g=0,o=0,mn=1;
+    for(let k=0;k<NPH;k++){const r=evalFrame(worldPose(S.motion,k/NPH,a*D),frames,mode);
+      const gg=r.filter(x=>x.st==='good').length,oo=r.filter(x=>x.st==='ok').length;
+      g+=gg/8;o+=(gg+oo)/8;mn=Math.min(mn,(gg+oo)/8);
+      r.forEach((x,i)=>{if(x.st==='good'||x.st==='ok'){markerRate[i]++;trC[i]++;if(x.id)idC[i]++;}});if(gg+oo===8)full++;tot++;}
+    sweep.push({a,good:g/NPH,any:o/NPH,min:mn});}
+  markerRate=markerRate.map(v=>v/tot);
+  return{sweep,markerRate,idRate:idC.map((v,i)=>trC[i]?v/trC[i]:0),idAll:idC.reduce((a,b)=>a+b,0)/Math.max(1,trC.reduce((a,b)=>a+b,0)),fullRate:full/tot,avg:sweep.reduce((q,x)=>q+x.any,0)/sweep.length};
+}
+
+// ---- 테마 ----
+let C={};
+function readColors(){const cs=getComputedStyle(document.documentElement);
+  ['bg','panel','fg','muted','line','grid','accent','good','warn','bad','body','scene'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim()||'#888');}
+const colOf=s=>({good:C.good,ok:C.warn,imu:C.accent,bad:C.bad})[s];
+
+// ---- three.js ----
+const cvs=$('c3');let R3=null,scene,cam,grid,bodyMat,capMeshes=[],markMeshes=[],dotMeshes=[],modGroup,rays,rayPos,rayCol;
+const orbit={th:0.75,ph:1.12,r:6.2,t:[0,0.9,0]};
+function initThree(){
+  if(typeof THREE==='undefined'){$('view').innerHTML='<div class="err">3D 라이브러리를 불러오지 못했어요. 페이지를 새로고침해 주세요. 아래 계산은 그대로 동작해요.</div>';return;}
+  R3=new THREE.WebGLRenderer({canvas:cvs,antialias:true});R3.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(42,1,0.05,60);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x555555,0.85));const dl=new THREE.DirectionalLight(0xffffff,0.6);dl.position.set(3,6,4);scene.add(dl);
+  bodyMat=new THREE.MeshStandardMaterial({roughness:0.8,metalness:0});
+  const cylG=new THREE.CylinderGeometry(1,1,1,18,1,true),sphG=new THREE.SphereGeometry(1,18,12);
+  for(let i=0;i<13;i++){const c={cyl:new THREE.Mesh(cylG,bodyMat),s1:new THREE.Mesh(sphG,bodyMat),s2:new THREE.Mesh(sphG,bodyMat)};
+    scene.add(c.cyl,c.s1,c.s2);capMeshes.push(c);}
+  const mg=new THREE.SphereGeometry(0.032,14,10);
+  for(let i=0;i<8;i++){const m=new THREE.Mesh(mg,new THREE.MeshBasicMaterial());scene.add(m);markMeshes.push(m);}
+  const dg=new THREE.SphereGeometry(1,8,6);
+  for(let i=0;i<8*64;i++){const m=new THREE.Mesh(dg,new THREE.MeshBasicMaterial());m.visible=false;scene.add(m);dotMeshes.push(m);}
+  rayPos=new Float32Array(8*4*2*3);rayCol=new Float32Array(8*4*2*3);
+  const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(rayPos,3));rg.setAttribute('color',new THREE.BufferAttribute(rayCol,3));
+  rays=new THREE.LineSegments(rg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.55}));scene.add(rays);
+  modGroup=new THREE.Group();scene.add(modGroup);
+  // 시점 조작
+  const pts=new Map();let pinch0=0;
+  cvs.addEventListener('pointerdown',e=>{cvs.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch0=Math.hypot(a[0]-b[0],a[1]-b[1]);}});
+  cvs.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const p=pts.get(e.pointerId);
+    if(pts.size===1){orbit.th-=(e.clientX-p[0])*0.008;orbit.ph=clamp(orbit.ph-(e.clientY-p[1])*0.008,0.15,1.52);}
+    pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pts.size===2){const [a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch0){orbit.r=clamp(orbit.r*pinch0/d,2.5,12);}pinch0=d;}});
+  const up=e=>{pts.delete(e.pointerId);pinch0=0;};cvs.addEventListener('pointerup',up);cvs.addEventListener('pointercancel',up);
+  cvs.addEventListener('wheel',e=>{e.preventDefault();orbit.r=clamp(orbit.r*(1+Math.sign(e.deltaY)*0.08),2.5,12);},{passive:false});
+}
+function themeThree(){if(!R3)return;scene.background=new THREE.Color(C.scene);bodyMat.color=new THREE.Color(C.body);
+  if(grid)scene.remove(grid);grid=new THREE.GridHelper(8,16,new THREE.Color(C.line),new THREE.Color(C.grid));scene.add(grid);buildModules();}
+function buildModules(){if(!R3)return;
+  while(modGroup.children.length){const c=modGroup.children.pop();c.geometry&&c.geometry.dispose();}
+  const tH=Math.tan(S.fov/2*D),tV=tH*0.75,L=1.1;
+  mods.forEach((m,i)=>{const F=modFrame(m);
+    const box=new THREE.Mesh(new THREE.BoxGeometry(S.base*2+0.08,0.05,0.04),new THREE.MeshStandardMaterial({color:new THREE.Color(C.fg)}));
+    box.position.set(...F.P);box.lookAt(...add(F.P,F.F));modGroup.add(box);
+    F.sens.forEach(sp=>{const s=new THREE.Mesh(new THREE.SphereGeometry(0.014,10,8),new THREE.MeshBasicMaterial({color:new THREE.Color(C.accent)}));
+      s.position.set(...add(sp,mul(F.F,0.025)));modGroup.add(s);});
+    const corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>add(F.P,mul(add(add(F.F,mul(F.R,x*tH)),mul(F.U,y*tV)),L)));
+    const v=[];corners.forEach((c,j)=>{v.push(...F.P,...c,...c,...corners[(j+1)%4]);});
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+    modGroup.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:new THREE.Color(C.accent),transparent:true,opacity:0.45})));
+  });}
+function draw3D(wp,res){if(!R3)return;
+  const up=new THREE.Vector3(0,1,0),tmp=new THREE.Vector3();
+  wp.caps.forEach((c,i)=>{const m=capMeshes[i],a=c[0],b=c[1],r=c[2],d=sub(b,a),l=len(d),mid=mul(add(a,b),0.5);
+    m.cyl.visible=l>1e-4;if(l>1e-4){m.cyl.position.set(...mid);m.cyl.scale.set(r,l,r);m.cyl.quaternion.setFromUnitVectors(up,tmp.set(...nrm(d)));}
+    m.s1.position.set(...a);m.s1.scale.setScalar(r);m.s2.position.set(...b);m.s2.scale.setScalar(r);});
+  const frames=mods.map(modFrame);let n=0;
+  const band=S.mode==='band',grey=new THREE.Color(C.muted);
+  dotMeshes.forEach(m=>m.visible=false);
+  res.forEach((r,i)=>{const col=new THREE.Color(colOf(r.st));markMeshes[i].position.set(...r.M);markMeshes[i].material.color=col;markMeshes[i].visible=!band;
+    if(band)wp.bands[i].dots.forEach((d,j)=>{const m=dotMeshes[i*64+j];if(!m)return;m.visible=true;m.position.set(...d.p);m.scale.setScalar(Math.max(0.008,S.dotd/2));m.material.color=r.dv[j]?col:grey;});
+    r.seen.forEach(sb=>{const P=frames[sb.k].P;rayPos.set([...P,...r.M],n*6);rayCol.set([col.r,col.g,col.b,col.r,col.g,col.b],n*6);n++;});});
+  rays.geometry.setDrawRange(0,n*2);rays.geometry.attributes.position.needsUpdate=true;rays.geometry.attributes.color.needsUpdate=true;
+  cam.position.set(orbit.t[0]+orbit.r*Math.sin(orbit.ph)*Math.sin(orbit.th),orbit.t[1]+orbit.r*Math.cos(orbit.ph),orbit.t[2]+orbit.r*Math.sin(orbit.ph)*Math.cos(orbit.th));
+  cam.lookAt(...orbit.t);R3.render(scene,cam);}
+
+// ---- 그래프 ----
+const ch=$('chart'),chx=ch.getContext('2d');let cd={w:600,h:220,dpr:1};
+function drawChart(){
+  const {w,h,dpr}=cd,g=chx;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const L=42,Rr=12,T=12,B=28,pw=w-L-Rr,ph=h-T-B,X=a=>L+a/360*pw,Y=v=>T+(1-v)*ph;
+  g.font='11px "IBM Plex Mono",monospace';g.fillStyle=C.muted;g.strokeStyle=C.grid;g.lineWidth=1;
+  [0,.25,.5,.75,1].forEach(v=>{g.beginPath();g.moveTo(L,Y(v));g.lineTo(L+pw,Y(v));g.stroke();g.textAlign='right';g.fillText(Math.round(v*100)+'%',L-6,Y(v)+4);});
+  g.textAlign='center';[0,90,180,270,360].forEach(a=>g.fillText(a+'°',X(a),h-8));
+  if(!sweep.length)return;
+  const path=key=>{g.beginPath();sweep.forEach((s,i)=>{i?g.lineTo(X(s.a),Y(s[key])):g.moveTo(X(s.a),Y(s[key]));});g.lineTo(X(360),Y(sweep[0][key]));};
+  const area=(key,col)=>{path(key);g.lineTo(X(360),Y(0));g.lineTo(X(0),Y(0));g.closePath();g.fillStyle=col+'26';g.fill();};
+  area('any',C.warn);area('good',C.good);
+  g.lineWidth=2;path('any');g.strokeStyle=C.warn;g.stroke();path('good');g.strokeStyle=C.good;g.stroke();
+  g.setLineDash([5,4]);g.lineWidth=1.5;path('min');g.strokeStyle=C.bad;g.stroke();
+  g.setLineDash([3,3]);g.lineWidth=1;g.strokeStyle=C.fg;g.beginPath();g.moveTo(X(S.yaw),T);g.lineTo(X(S.yaw),T+ph);g.stroke();g.setLineDash([]);
+}
+
+// ---- 표·요약·타이밍 ----
+const LBL={good:['2대 이상 교차','p-good'],ok:['단독 스테레오','p-ok'],imu:['IMU 보완 (드리프트)','p-imu'],bad:['추적 불가','p-bad']};
+function rateColor(v){return v>=0.95?C.good:v>=0.7?C.warn:C.bad;}
+const LBLB={good:['2대 이상 교차','p-good'],ok:['한 모듈 단독 (점 3개+)','p-ok'],imu:['IMU 보완 (드리프트)','p-imu'],bad:['추적 불가','p-bad']};
+const BNAMES=['가슴 밴드','허리 밴드','왼팔 밴드','오른팔 밴드','왼허벅지 밴드','오른허벅지 밴드','왼발목 밴드','오른발목 밴드'];
+function renderPatterns(){
+  const box=$('patterns');if(S.mode!=='band'){box.innerHTML='';return;}
+  const circ=[1.023,1.023,0.39,0.39,0.547,0.547,0.421,0.421];
+  box.innerHTML=`<div class="lbl" style="margin:0">자동 설계된 점 패턴 · 이웃한 <b style="color:var(--fg)">${PAT.W}칸</b>만 읽으면 어느 밴드인지 구분돼요</div>`+
+   PAT.groups.map((g,gi)=>{const m=PAT.pick[gi],b=g[1][0],Lc=m.length;let n=Math.max(Lc,Math.round(circ[b]/S.pitch/Lc)*Lc);while(n<3)n+=Lc;
+    const show=Math.min(n,Math.max(Lc*2,8)),w=show*14+8;let dots='';
+    for(let j=0;j<show;j++){const sy=m[j%Lc],x=10+j*14;dots+=`<circle cx="${x}" cy="7" r="4" fill="${sy&1?'var(--accent)':'none'}" stroke="var(--line)"/><circle cx="${x}" cy="19" r="4" fill="${sy&2?'var(--accent)':'none'}" stroke="var(--line)"/>`;}
+    const nd=Array.from({length:n},(_,j)=>m[j%Lc]===3?2:1).reduce((a,c)=>a+c,0);
+    return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.8rem"><span style="min-width:9.5em">${g[0]}</span>
+      <svg width="${w}" height="26" viewBox="0 0 ${w} 26" aria-label="${g[0]} 패턴">${dots}</svg>
+      <span style="color:var(--muted);font-family:var(--mono)">${Lc}칸 반복 · ${n}칸 · 점 ${nd}개</span></div>`;}).join('');
+}
+function renderTable(res){
+  const band=S.mode==='band',L=band?LBLB:LBL,NM=band?BNAMES:MNAMES;
+  $('thSc').textContent=band?'보이는 점':'보는 센서';
+  $('mtable').innerHTML=res.map((r,i)=>`<tr><td>${NM[i]}</td><td class="n">${r.seen.length}</td><td class="n">${band?r.sc+'/'+r.nd:r.sc}</td>
+   <td><span class="pill ${L[r.st][1]}">${L[r.st][0]}</span></td><td class="n">${r.err==null?'—':(r.err*1000).toFixed(1)+' mm'}</td>
+   <td class="n"><span class="rate">${Math.round(markerRate[i]*100)}%<span class="track"><div style="width:${markerRate[i]*100}%;background:${rateColor(markerRate[i])}"></div></span></span></td>
+   <td class="n">${band?(r.st==='good'||r.st==='ok'?(r.id?'✓ ':'✗ '):'')+Math.round(idRate[i]*100)+'%':'—'}</td></tr>`).join('');}
+function renderStats(res){
+  const now=res.filter(r=>r.st==='good'||r.st==='ok').length;
+  const avg=sweep.reduce((s,x)=>s+x.any,0)/(sweep.length||1);
+  let wi=0;markerRate.forEach((v,i)=>{if(v<markerRate[wi])wi=i;});
+  const NM=S.mode==='band'?BNAMES:MNAMES;
+  $('cmp').innerHTML=`<span>같은 배치·동작에서 반사 구슬</span><span>${Math.round(cmp.ball*100)}%</span><span>같은 배치·동작에서 패턴 밴드</span><span>${Math.round(cmp.band*100)}%</span>`;
+  $('stats').innerHTML=[[`${now}/8`,'현재 프레임 추적 부위'],[`${Math.round(avg*100)}%`,'360°×동작 평균 커버리지'],
+    S.mode==='band'?[`${Math.round(idAll*100)}%`,`판별 성공률 (인접 ${PAT.W}칸)`]:[`${Math.round(fullRate*100)}%`,'8곳 모두 추적되는 프레임 비율'],[`${NM[wi]} ${Math.round(markerRate[wi]*100)}%`,'가장 약한 부위']]
+    .map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');}
+function renderTiming(){
+  const rate=S.stagger?S.fps*3:S.fps,blurMm=S.spd*S.exp,z=Math.hypot(S.dist,S.hgt-1),blurPx=blurMm/1000/z*focal();
+  $('timing').innerHTML=`<span>모듈당 관측 횟수</span><span>${rate} 회/초</span>
+    <span>평균 샘플 대기 지연</span><span>${(1000/rate/2).toFixed(1)} ms</span>
+    <span>샘플 사이 팔 이동 거리</span><span>${(S.spd*1000/rate).toFixed(1)} mm</span>
+    <span>노출 중 마커 번짐</span><span>${blurMm.toFixed(1)} mm · ${blurPx.toFixed(1)} px</span>`;}
+
+// ---- 원가 ----
+const CF=[['sensor','센서 1개 (렌즈·필터 포함)',8000],['fpga','처리 칩(FPGA) / 모듈',20000],['mcu','USB·제어 칩 / 모듈',6000],
+  ['led','적외선 LED·드라이버 / 모듈',5000],['pcb','기판 제작·조립 / 모듈',10000],['case','케이스·거치대·케이블 / 모듈',10000],
+  ['marker','마커 또는 밴드 세트(8개)',15000],['imuc','IMU 1개 (보조 켰을 때)',4000],['pack','포장·설명서',7000],
+  ['retail','소비자 판매가',490000],['plat','결제·플랫폼 수수료 %',10],['ship','배송·CS·불량 대응 / 대',30000],
+  ['mkt','마케팅 / 대',40000],['nre','개발비 총액 (한 번)',200000000],['units','예상 판매량 (대)',2000]];
+const CP={'부품 저가 추정':{sensor:5000,fpga:12000,mcu:3000,led:3000,pcb:5000,case:6000,marker:10000,imuc:3000,pack:5000},
+  '중간 추정':{sensor:8000,fpga:20000,mcu:6000,led:5000,pcb:10000,case:10000,marker:15000,imuc:4000,pack:7000},
+  '부품 고가 추정':{sensor:15000,fpga:30000,mcu:9000,led:8000,pcb:15000,case:15000,marker:25000,imuc:6000,pack:10000}};
+const cv={};CF.forEach(([k,,v])=>cv[k]=v);
+$('cin').innerHTML=CF.map(([k,l])=>`<label class="f" for="c_${k}">${l}<input type="number" id="c_${k}" min="0" step="${k==='plat'?1:1000}" value="${cv[k]}"></label>`).join('');
+CF.forEach(([k])=>$('c_'+k).addEventListener('input',e=>{cv[k]=+e.target.value||0;renderCost();}));
+$('cpresets').innerHTML=Object.keys(CP).map(n=>`<button type="button" data-cp="${n}">${n}</button>`).join('');
+$('cpresets').addEventListener('click',e=>{const n=e.target.dataset.cp;if(!n)return;Object.assign(cv,CP[n]);Object.keys(CP[n]).forEach(k=>$('c_'+k).value=cv[k]);renderCost();});
+function renderCost(){
+  const M=mods.length;$('cMods').textContent=M+'개';
+  const perMod=cv.sensor*3+cv.fpga+cv.mcu+cv.led+cv.pcb+cv.case,imuCost=S.imu?cv.imuc*8:0,bom=perMod*M+cv.marker+imuCost+cv.pack;
+  const R=cv.retail,vat=R/11,plat=R*cv.plat/100,net=R-vat-plat-cv.ship-cv.mkt-bom;
+  const parts=[['부가세',vat,C.muted],['결제·플랫폼',plat,C.line],['배송·CS',cv.ship,C.body],['마케팅',cv.mkt,C.warn],['부품 원가',bom,C.accent],['남는 금액',Math.max(net,0),C.good]];
+  const tot=parts.reduce((s,p)=>s+p[1],0)||1;
+  $('cbar').innerHTML=parts.map(p=>`<div title="${p[0]} ${won(p[1])}" style="width:${p[1]/tot*100}%;background:${p[2]}"></div>`).join('');
+  $('cleg').innerHTML=parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]} ${man(p[1])}</span>`).join('');
+  $('ckv').innerHTML=`<span>모듈 1개 부품</span><span>${won(perMod)}</span><span>모듈 ${M}개</span><span>${won(perMod*M)}</span>
+    <span>마커·포장${S.imu?'·IMU 8개':''}</span><span>${won(cv.marker+cv.pack+imuCost)}</span>
+    <span class="tot">부품 원가 합계</span><span class="tot">${won(bom)}</span>
+    <span>판매가 대비 원가 비율</span><span>${(bom/R*100).toFixed(0)}%</span>
+    <span class="tot">대당 남는 금액</span><span class="tot">${won(net)}</span>`;
+  const v=$('verdict');v.className='verdict';
+  if(net<=0){v.classList.add('bad');v.innerHTML=`<p><b>적자 구조예요.</b></p><p>판매가 ${man(R)}로는 비용을 덮지 못해 대당 ${man(-net)}가 모자라요. 모듈 수나 부품 단가를 줄이거나 판매가를 올려야 해요.</p>`;return;}
+  const be=Math.ceil(cv.nre/net),over=cv.units-be;
+  if(over>=0)v.innerHTML=`<p><b>${cv.units.toLocaleString('ko-KR')}대 판매로 개발비를 회수해요.</b></p><p>손익분기 ${be.toLocaleString('ko-KR')}대. 이후 판매분의 이익은 약 ${man(over*net)}이에요.</p>${R>500000?'<p>단, 판매가가 50만 원을 넘어요.</p>':''}`;
+  else{v.classList.add('warn');v.innerHTML=`<p><b>개발비 회수에 ${be.toLocaleString('ko-KR')}대가 필요해요.</b></p><p>예상 판매량보다 ${(-over).toLocaleString('ko-KR')}대 부족해서 약 ${man(-over*net)}를 회수하지 못해요. 크라우드펀딩으로 개발비를 먼저 모으거나 개발비를 줄이는 방법을 검토해 보세요.</p>`;}
+}
+
+// ---- 조작 ----
+const markMode=()=>{[...$('modes').children].forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));$('bandctl').hidden=S.mode!=='band';renderPatterns();};
+$('modes').addEventListener('click',e=>{const m=e.target.dataset.mode;if(!m)return;S.mode=m;markMode();dirty(true);});
+$('motions').innerHTML=Object.keys(MOTIONS).map(n=>`<button type="button" data-m="${n}">${n}</button>`).join('');
+const markMotion=()=>[...$('motions').children].forEach(b=>b.classList.toggle('on',b.dataset.m===S.motion));
+$('motions').addEventListener('click',e=>{const n=e.target.dataset.m;if(!n)return;S.motion=n;markMotion();dirty(true);});
+$('presets').innerHTML=Object.keys(PRESETS).map(n=>`<button type="button" data-p="${n}">${n}</button>`).join('');
+const markPreset=()=>[...$('presets').children].forEach(b=>b.classList.toggle('on',b.dataset.p===presetName));
+function renderModList(){
+  $('modlist').innerHTML=mods.map((m,i)=>`<label class="f" for="az${i}"><span class="row">모듈 M${i+1} 위치 (정면 0°) <output id="az${i}O">${Math.round(m.az)}°</output></span>
+    <input id="az${i}" type="range" min="-180" max="180" value="${Math.round(((m.az+180)%360+360)%360-180)}"></label>`).join('');
+  mods.forEach((m,i)=>$('az'+i).addEventListener('input',e=>{m.az=+e.target.value;$('az'+i+'O').textContent=m.az+'°';presetName='';markPreset();dirty(true,true);}));}
+$('presets').addEventListener('click',e=>{const n=e.target.dataset.p;if(!n)return;presetName=n;mods=PRESETS[n].map(az=>({az}));markPreset();renderModList();dirty(true,true);});
+function bind(id,key,fmt,conv=v=>+v,sw=true,mod=false){const el=$(id),set=()=>{S[key]=conv(el.value);$(id+'O').textContent=fmt(S[key]);};
+  set();el.addEventListener('input',()=>{set();dirty(sw,mod);});}
+bind('yaw','yaw',v=>Math.round(v)+'°',v=>+v,false);
+bind('dist','dist',v=>v.toFixed(1)+' m',v=>+v,true,true);
+bind('hgt','hgt',v=>v.toFixed(1)+' m',v=>+v,true,true);
+bind('fov','fov',v=>v+'°',v=>+v,true,true);
+bind('base','base',v=>(v*100).toFixed(1)+' cm',v=>v/100,true,true);
+bind('res','res',v=>v+' px');
+bind('pitch','pitch',v=>(v*100).toFixed(1)+' cm',v=>v/100);
+bind('rowgap','rowgap',v=>(v*100).toFixed(1)+' cm',v=>v/100);
+bind('dotd','dotd',v=>(v*100).toFixed(1)+' cm',v=>v/100);
+bind('mingap','mingap',v=>v.toFixed(1)+' px');
+$('pitch').addEventListener('input',renderPatterns);
+$('sym').addEventListener('change',e=>{S.sym=e.target.checked;genPatterns();renderPatterns();dirty(true);});
+bind('tilt','tilt',v=>v+'°');
+bind('fps','fps',v=>v+' fps',v=>+v,false);
+bind('exp','exp',v=>v.toFixed(1)+' ms',v=>+v,false);
+bind('spd','spd',v=>v.toFixed(1)+' m/s',v=>+v,false);
+$('stagger').addEventListener('change',e=>{S.stagger=e.target.checked;dirty(false);});
+$('imu').addEventListener('change',e=>{S.imu=e.target.checked;dirty(true);});
+$('play').addEventListener('change',e=>{S.play=e.target.checked;});
+$('spin').addEventListener('change',e=>{S.spin=e.target.checked;});
+
+let needSweep=true,needMods=true;
+function dirty(sw,mod){if(sw)needSweep=true;if(mod)needMods=true;}
+let sweepTimer=null;
+function frame(t){
+  const dt=frame.last?Math.min(0.05,(t-frame.last)/1000):0;frame.last=t;
+  if(S.play)S.ph=(S.ph+dt*0.5)%1;
+  if(S.spin){S.yaw=(S.yaw+dt*25)%360;$('yaw').value=Math.round(S.yaw);$('yawO').textContent=Math.round(S.yaw)+'°';}
+  if(needMods){buildModules();needMods=false;renderCost();}
+  if(needSweep){needSweep=false;clearTimeout(sweepTimer);sweepTimer=setTimeout(()=>{computeSweep();drawChart();renderStats(cur);renderTable(cur);},60);}
+  const wp=worldPose(S.motion,S.ph,S.yaw*D);cur=evalFrame(wp,mods.map(modFrame));
+  draw3D(wp,cur);
+  if(!frame.tick||t-frame.tick>150){frame.tick=t;renderTable(cur);renderStats(cur);renderTiming();drawChart();}
+  requestAnimationFrame(frame);
+}
+let cur=[];
+
+function resize(){
+  readColors();
+  const w=$('view').clientWidth||600,h=Math.round(w*(w<560?1:0.78));
+  if(R3){R3.setSize(w,h,false);cvs.style.height=h+'px';cam.aspect=w/h;cam.updateProjectionMatrix();themeThree();}
+  const cw=ch.clientWidth||600,chh=Math.max(170,Math.min(260,cw*0.32)),dpr=window.devicePixelRatio||1;
+  ch.width=Math.round(cw*dpr);ch.height=Math.round(chh*dpr);ch.style.height=chh+'px';cd={w:cw,h:chh,dpr};
+  drawChart();renderCost();
+}
+window.addEventListener('resize',resize);
+const mq=matchMedia('(prefers-color-scheme: dark)');mq.addEventListener&&mq.addEventListener('change',resize);
+new MutationObserver(resize).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+genPatterns();initThree();markMode();markMotion();markPreset();renderModList();readColors();computeSweep();resize();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
