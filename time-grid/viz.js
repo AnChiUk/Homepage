@@ -429,6 +429,65 @@
     makePlayer(panel, render, 20).reset(N);
   }
 
+  // ── 동역학 2-b-3 완전 결합 궤도 ─────────────────────
+  async function initCoupled(panel) {
+    const names = ['bound', 'kinetic', 'newton'];
+    const sets = {};
+    (await Promise.all(names.map(n => loadJSON('coupled_orbit_' + n + '.json')))).forEach((d, k) => { sets[names[k]] = d; });
+    const color = { bound: COL.accent, kinetic: COL.warm, newton: '#737373' };
+    const label = { bound: '보존 원천', kinetic: '운동 응력만', newton: '결합 없음' };
+    const semi = d => d.E_orb.map(E => d.G * d.mass * d.mass / (-2 * E));
+    // 2-b-2 의 방출 세기로 t = 50 부터 그린 단열 예측 a⁴ = a_s⁴ - 4Kκ(t - t_s)
+    const predict = (d, kap) => {
+      const a = semi(d), i0 = d.t.findIndex(t => t >= 50), a4 = Math.pow(a[i0], 4);
+      return d.t.map(t => t < 50 ? null : (v => v > 0 ? Math.pow(v, 0.25) : null)(a4 - 4 * d.K4 * kap * (t - d.t[i0])));
+    };
+    let key = 'bound';
+    const tEnd = Math.max(...names.map(n => sets[n].t.at(-1)));
+    const N = 190;
+
+    function chart(t) {
+      const b = sets.bound, k = sets.kinetic, nw = sets.newton;
+      lineChart(panel.querySelector('.cv-chart'), [
+        { name: '', color: '#a3a3a3', x: b.t, y: predict(b, b.kappa_2b2) },
+        { name: '', color: '#a3a3a3', x: k.t, y: predict(k, k.kappa_2b2 / 4) },
+        { name: label.newton, color: color.newton, x: nw.t, y: semi(nw) },
+        { name: label.kinetic, color: color.kinetic, x: k.t, y: semi(k) },
+        { name: label.bound, color: color.bound, x: b.t, y: semi(b) },
+      ], { xlab: '시간', ylab: '장반경 a', xmin: 0, xmax: 150, ymin: 3, ymax: 6.4, cursor: t, legend: false, fmtY: v => v.toFixed(1) });
+    }
+
+    function render(f) {
+      const t = tEnd * f / (N - 1), d = sets[key];
+      let i = 0; while (i < d.t.length - 1 && d.t[i + 1] <= t) i++;
+      const { ctx, w, h } = hiDPI(panel.querySelector('.cv-orbit'));
+      ctx.clearRect(0, 0, w, h);
+      const R = 0.4 * w / 3.2, cx = w / 2, cy = h / 2;
+      ctx.strokeStyle = '#333'; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(cx, cy, 3 * R, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      for (const P of ['X1', 'X2']) {
+        ctx.strokeStyle = color[key]; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let j = 0; j <= i; j++) { const [x, y] = d[P][j]; j ? ctx.lineTo(cx + x * R, cy - y * R) : ctx.moveTo(cx + x * R, cy - y * R); }
+        ctx.stroke(); ctx.globalAlpha = 1;
+        const [x, y] = d[P][i];
+        ctx.fillStyle = color[key]; ctx.beginPath(); ctx.arc(cx + x * R, cy - y * R, 6, 0, 7); ctx.fill();
+      }
+      ctx.lineWidth = 1;
+      chart(t);
+      const stopped = t > d.t.at(-1) + 0.5 ? ' (거리 3.5에서 멈춤: 덩어리가 겹치기 직전)' : '';
+      panel.querySelector('.readout').textContent = label[key] + ' · 거리 ' + d.d[i].toFixed(2) + ' · 장반경 ' + semi(d)[i].toFixed(2) + stopped;
+      panel.querySelector('.time').textContent = 't = ' + t.toFixed(0) + ' / ' + tEnd.toFixed(0);
+    }
+
+    const player = makePlayer(panel, render, 15);
+    panel.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+      panel.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
+      key = b.dataset.case; player.redraw();
+    }));
+    player.reset(N);
+  }
+
   // ── 격자 보존 오차 ─────────────────────────────────
   async function initCons(panel) {
     const d = await loadJSON('conservation.json');
@@ -494,7 +553,7 @@
   }
 
   // ── 시작: 패널은 화면 가까이 오면 데이터를 읽는다 ──────
-  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, field: initField, power: initPower, cons: initCons, fail: initFail };
+  const loaders = { gw: initGW, single: initSingle, binary: initBinary, emit: initEmit, field: initField, power: initPower, coupled: initCoupled, cons: initCons, fail: initFail };
   function start(panel) {
     const s = panel.querySelector('.status');
     loaders[panel.dataset.load](panel).then(() => { if (!s.classList.contains('err')) s.textContent = ''; }, err => fail(panel, err));

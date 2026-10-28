@@ -160,6 +160,33 @@
       <p class="status">불러오는 중…</p>
     </article>
 
+    <!-- 동역학 2-b-3 완전 결합 궤도 -->
+    <article class="panel" id="p-coupled" data-load="coupled">
+      <header>
+        <span class="tag">동역학 2-b-3</span>
+        <h3>반작용을 넣지 않아도 궤도가 저절로 줄어든다</h3>
+        <p>두 덩어리와 막 변형파를 한 라그랑지안으로 함께 진행했다. 장은 덩어리의 응력으로 움직이고, 덩어리는 같은 결합 에너지에서 나온 힘을 받는다. 보존 원천이면 거리 6이 3.5까지 줄었고, 줄어드는 속도(방출 세기 0.94~0.96)와 잃은 궤도 에너지(넘겨준 에너지의 0.98배)가 2-b-2에서 따로 잰 방출과 맞았다. 운동 응력만이면 약 1/4 속도로 줄어든다.</p>
+      </header>
+      <div class="seg" role="group" aria-label="경우">
+        <button class="on" data-case="bound">보존 원천</button>
+        <button data-case="kinetic">운동 응력만</button>
+        <button data-case="newton">결합 없음</button>
+      </div>
+      <div class="views two">
+        <figure>
+          <canvas class="cv-orbit" width="360" height="360"></canvas>
+          <figcaption>두 덩어리의 궤적. 점선 원은 처음 궤도(거리 6)</figcaption>
+        </figure>
+        <figure>
+          <canvas class="cv-chart chart" width="420" height="360"></canvas>
+          <figcaption>궤도 에너지로 정한 장반경 a = Gm²/(−2E). 파랑 보존 원천, 주황 운동 응력만, 짙은 회색 결합 없음. 밝은 회색은 2-b-2에서 잰 방출 세기(보존 0.939, 운동만 그 1/4)로 t = 50부터 그린 예측</figcaption>
+        </figure>
+      </div>
+      <div class="readout"></div>
+      <div class="player"><button class="play">▶</button><input type="range" class="scrub" min="0" value="0"><span class="time"></span></div>
+      <p class="status">불러오는 중…</p>
+    </article>
+
     <div class="pair">
       <!-- 격자 보존 오차 -->
       <article class="panel" id="p-cons" data-load="cons">

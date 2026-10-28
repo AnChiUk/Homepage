@@ -32,6 +32,8 @@
 | `field_stress_orbit.py` | 비선형 1-나 실제 궤도에서 물질 + 장 하중 | `self_gravity_slow.py`의 묶인 궤도 사용. 결과 `field_stress_orbit_out.txt` |
 | `gw_power.py` | 동역학 2-b-2 가 방출 에너지 | `gw_emission.py`의 격자·원천·흡수층 사용. 160³ 약 23분. 결과 `gw_power_160_out.txt` |
 | `inspiral.py` | 동역학 2-b-2 나 궤도 줄어듦 | 단열 계산, 잰 방출 세기 κ = 0.939 |
+| `coupled_orbit.py` | 동역학 2-b-3 완전 결합 궤도 | `python coupled_orbit.py newton\|bound\|kinetic [격자] [끝 시각]`. 160³ 약 20분, 메모리 약 2 GB. 시작할 때 힘 공식을 유한차분으로 점검. 결과 `coupled_orbit_{경우}_out.txt` |
+| `coupled_orbit_analysis.py` | 동역학 2-b-3 분석 | 궤도 에너지로 정한 장반경으로 방출 세기 κ. 결과 `coupled_orbit_analysis_out.txt` |
 
 ## 웹 시각화 데이터 (`viz_data/`)
 
@@ -50,6 +52,7 @@
 | `field_stress_orbit.json`, `field_stress_orbit_preview.png` | 비선형 1-나: 궤도 동안 ½Ï, 물질 응력, 장 하중의 회전 성분과 적분 비 |
 | `gw_power_160.json`, `gw_power_preview.png` | 동역학 2-b-2 가: 원천이 넘겨준 에너지와 구면별 흐름(4중극 방출률 대비) |
 | `inspiral.json` | 동역학 2-b-2 나: 4중극 공식과 잰 방출 세기로 줄어드는 궤도(거리, 한 덩어리의 x, y) |
+| `coupled_orbit_{bound,kinetic,newton}.json` | 동역학 2-b-3: 두 덩어리 위치, 거리, 뉴턴 궤도 에너지, 장에 넘겨준 누적 에너지 (0.8 시간 단위마다) |
 
 ## 문서와 저장소
 
