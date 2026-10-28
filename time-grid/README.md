@@ -34,6 +34,8 @@
 | `inspiral.py` | 동역학 2-b-2 나 궤도 줄어듦 | 단열 계산, 잰 방출 세기 κ = 0.939 |
 | `coupled_orbit.py` | 동역학 2-b-3 완전 결합 궤도 | `python coupled_orbit.py newton\|bound\|kinetic [격자] [끝 시각]`. 160³ 약 20분, 메모리 약 2 GB. 시작할 때 힘 공식을 유한차분으로 점검. 결과 `coupled_orbit_{경우}_out.txt` |
 | `coupled_orbit_analysis.py` | 동역학 2-b-3 분석 | 궤도 에너지로 정한 장반경으로 방출 세기 κ. 결과 `coupled_orbit_analysis_out.txt` |
+| `wave_orbit.py` | 동역학 2-b-4 저장 파동 덩어리의 완전 결합 (실패 기록) | `python wave_orbit.py newton\|bound\|kinetic [끝 시각] [binary\|single\|moving\|nobr\|rigid]`. 160³ + 고운 격자 64³, 한 경우 약 20~30분. 바닥 상태는 처음에 약 3분 걸려 `wave_orbit_ground_mu3.npy`로 저장. 결과 `wave_orbit_{newton,bound,kinetic}_out.txt`, 점검 `wave_orbit_checks_out.txt` |
+| `wave_orbit_diag.py` | 동역학 2-b-4 점검: 덩어리 내부 떨림의 방출 | 결합 없는 궤도, 약 2분. 결과 `wave_orbit_diag_out.txt` |
 | `nonlinear2.py` | 비선형 2 장 자신의 하중 되먹임과 근일점 이동 | 가: 3D 격자 128³ 정적 장의 β, 나: 파속 광선 궤도의 근일점 이동. 약 1분. 결과 `nonlinear2_out.txt` |
 
 ## 웹 시각화 데이터 (`viz_data/`)
