@@ -7,6 +7,7 @@ import json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'time-grid'))
 import relabel_test_1d as R
+import deflection_dynamics as D
 
 OUT = os.path.join(HERE, '..', 'test', 'reference')
 
@@ -31,6 +32,26 @@ def relabel_1d():
     return dict(source='time-grid/relabel_test_1d.py', predicted_O1=float(NA / NB), cases=rows)
 
 
+def deflection_2d(a, ng, qs):
+    """동역학 1 파속 휨. 원본은 모듈 전역(A, NG)을 읽으므로 바꿔서 줄인 격자도 같은 코드로 잰다"""
+    D.A, D.NG = a, ng
+    D.L = a * ng
+    rows = []
+    for g in (D.GAMMA_RULE, 0.0):
+        for q in qs:
+            vg, th = D.run(q, g)
+            rows.append(dict(gamma=float(g), q=q, vg=float(vg), theta=float(th)))
+            print(a, ng, rows[-1], flush=True)
+    return dict(source='time-grid/deflection_dynamics.py', a=a, ng=ng, mu=D.MU, rs=D.RS, b=D.B, gm=D.GM, sig=D.SIG, z0=D.Z0,
+                gamma_rule=float(D.GAMMA_RULE), cases=rows)
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    json.dump(relabel_1d(), open(os.path.join(OUT, 'relabel_1d.json'), 'w'), indent=1)
+    which = sys.argv[1:] or ['relabel', 'deflection_small', 'deflection']
+    if 'relabel' in which:
+        json.dump(relabel_1d(), open(os.path.join(OUT, 'relabel_1d.json'), 'w'), indent=1)
+    if 'deflection_small' in which:      # 화면용 줄인 격자 (같은 영역, 간격 3배)
+        json.dump(deflection_2d(0.12, 256, [2.0, 4.0, 6.0]), open(os.path.join(OUT, 'deflection_2d_small.json'), 'w'), indent=1)
+    if 'deflection' in which:            # 원본 크기 (문서의 결과와 같은 설정)
+        json.dump(deflection_2d(0.04, 768, [2.0, 4.0, 8.0, 12.0]), open(os.path.join(OUT, 'deflection_2d.json'), 'w'), indent=1)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/deflection_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/relabel_screen.dart';
 
@@ -21,6 +22,7 @@ class TimeGridApp extends StatelessWidget {
       routes: {
         '/': (_) => const HomeScreen(),
         '/relabel': (_) => const RelabelScreen(),
+        '/deflection': (_) => const DeflectionScreen(),
       },
     );
   }

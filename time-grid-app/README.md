@@ -9,7 +9,7 @@
 | 화면 | 상태 | 계산 | 원본 실험 |
 | --- | --- | --- | --- |
 | 막의 떨림 (이름표 바꾸기) | 완료 | 앱 안에서 실시간 1D 격자 | `time-grid/relabel_test_1d.py` (시험 1) |
-| 빛의 휘어짐 | 준비 중 | 실시간 2D | `deflection_dynamics.py` |
+| 빛의 휘어짐 | 완료 | 앱 안에서 실시간 2D 격자 (256², 원본 768²와 같은 영역) | `deflection_dynamics.py` (동역학 1) |
 | 두 덩어리 궤도 | 준비 중 | 실시간 2D | `self_gravity_slow.py` |
 | 중력파 | 준비 중 | 저장 데이터 재생 + 실시간 행렬 | `gw_free_dynamics.py`, `mode_count_test.py` |
 
@@ -33,10 +33,12 @@ Python 실험 코드를 Dart로 옮길 때 부호, 정규화, 격자 미분이 �
 
 - 막의 떨림: 이름표 6가지(균일 두 시간 간격, 거친 격자, 사인, sinh, 변환 안 한 대조)에서 노드 수, 홉 수, 시간 간격, 시계 진동수, 시계비 O1, 신호 시간 O2가 Python과 상대 10⁻⁹ 안에서 같다. 화면이 실제로 돌리는 진행(`LiveExperiment`)을 끝까지 돌린 값도 테스트 측정값과 정확히 같다.
 
+- 빛의 휘어짐: 원본 크기(768², 8경우)와 화면 크기(256², 6경우) 모두에서 휨각 θ가 Python과 상대 10⁻⁸ 안에서 같다. 화면 크기는 같은 속도에서 원본 크기와 1.5% 안이다(그래서 화면의 속도는 격자가 감당하는 q ≤ 6, v ≤ 0.77까지).
+
 ## 실행
 
 ```
-flutter test                      # 기준값 테스트
+flutter test                      # 기준값 테스트 (원본 크기 2D 는 경우마다 1분 안팎)
 flutter run -d chrome             # 개발 실행
 python tool/make_reference.py     # 기준값 다시 만들기 (Python, numpy, scipy)
 flutter build web --release --base-href /Homepage/time-grid-app/app/ -o <이 폴더의 절대 경로>/app

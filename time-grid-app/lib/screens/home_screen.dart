@@ -9,7 +9,7 @@ class _Entry {
 
 const _entries = <_Entry>[
   _Entry('막의 떨림', '그리드와 막, 시계 틱, 틱으로 잰 홉. 이름표를 바꿔도 잰 값은 같다', Icons.graphic_eq, '/relabel'),
-  _Entry('빛의 휘어짐', '준비 중 · γ = 1 / γ = 0, 속도별 휨 1 + γv²', Icons.flare, null),
+  _Entry('빛의 휘어짐', '물질 쪽으로 휘는 파속. 휨이 속도에 따라 1 + γv²로 커짐 (γ = 1 / 0 비교)', Icons.flare, '/deflection'),
   _Entry('두 덩어리 궤도', '준비 중 · 서로 끌리는 저장 파동 덩어리', Icons.blur_circular, null),
   _Entry('중력파', '준비 중 · + / × 두 편광만 출렁임', Icons.waves, null),
 ];
