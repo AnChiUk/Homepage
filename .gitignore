@@ -49,3 +49,5 @@ time-grid/wave_orbit_ground_*.npy
 time-grid/viz_data/wave_orbit_*.json
 # 시간 그리드: 작업 중 로컬 파일 (공개하지 않음)
 time-grid/wip/
+# 시간 그리드 앱: 웹 빌드의 CanvasKit 은 기본으로 gstatic CDN 에서 받으므로 올리지 않음 (37 MB)
+time-grid-app/app/canvaskit/
