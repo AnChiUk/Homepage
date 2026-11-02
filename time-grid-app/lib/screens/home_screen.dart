@@ -11,7 +11,7 @@ const _entries = <_Entry>[
   _Entry('막의 떨림', '그리드와 막, 시계 틱, 틱으로 잰 홉. 이름표를 바꿔도 잰 값은 같다', Icons.graphic_eq, '/relabel'),
   _Entry('빛의 휘어짐', '물질 쪽으로 휘는 파속. 휨이 속도에 따라 1 + γv²로 커짐 (γ = 1 / 0 비교)', Icons.flare, '/deflection'),
   _Entry('두 덩어리 궤도', '자기 중력으로 묶인 파동 덩어리 둘이 서로 끌려 도는 궤도 (끌림 켬/끔 비교)', Icons.blur_circular, '/orbit'),
-  _Entry('중력파', '준비 중 · + / × 두 편광만 출렁임', Icons.waves, null),
+  _Entry('중력파', '모양 6가지 중 + / × 두 편광만 출렁임, 고리 표지의 찌그러짐 재생', Icons.waves, '/gw'),
 ];
 
 class HomeScreen extends StatelessWidget {

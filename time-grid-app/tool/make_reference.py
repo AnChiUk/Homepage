@@ -10,6 +10,7 @@ import relabel_test_1d as R
 import deflection_dynamics as D
 import numpy as np
 import self_gravity_slow as S
+import mode_count_test as MC
 
 OUT = os.path.join(HERE, '..', 'test', 'reference')
 
@@ -109,9 +110,28 @@ def self_gravity(a, ng, dt, dtau, gsteps, t_end, save_every):
     return out
 
 
+def modes():
+    """텐서 2단계 모드 세기: 후보 C1 / C3, 연속 방향과 격자 기호. 고윳값(ω²), 출렁임 속도, 이름표 수, 정적 수"""
+    rows = []
+    def add(cand, q, label):
+        K, V = (MC.C1 if cand == 'C1' else MC.C3)(q)
+        w2 = np.sort(np.linalg.eigvals(np.linalg.solve(K, V)).real)
+        osc, ng, st, rm = MC.analyze(K, V, q, MC.constraints(q) if cand == 'C3' else None)
+        rows.append(dict(candidate=cand, label=label, q=[float(v) for v in q], w2=[float(v) for v in w2],
+                         speeds=[float(v) for v in osc], gauge=int(ng), static=int(st)))
+    q0 = 0.3 * np.array([1.0, 2.0, 3.0]) / np.sqrt(14)
+    add('C1', q0, 'continuum (1,2,3)')
+    add('C3', q0, 'continuum (1,2,3)')
+    for qa in (0.05, 0.3, 0.8, 1.5):
+        for d in ([1, 0, 0], [1, 1, 0], [1, 1, 1]):
+            qv = qa * np.array(d, float) / np.linalg.norm(d)
+            add('C3', 2 * np.sin(qv / 2), f'lattice qa={qa} dir={d}')
+    return dict(source='time-grid/mode_count_test.py', cases=rows)
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    which = sys.argv[1:] or ['relabel', 'deflection_small', 'deflection', 'gravity_small', 'gravity']
+    which = sys.argv[1:] or ['relabel', 'deflection_small', 'deflection', 'gravity_small', 'gravity', 'modes']
     if 'relabel' in which:
         json.dump(relabel_1d(), open(os.path.join(OUT, 'relabel_1d.json'), 'w'), indent=1)
     if 'deflection_small' in which:      # 화면용 줄인 격자 (같은 영역, 간격 3배)
@@ -121,5 +141,7 @@ if __name__ == '__main__':
     if 'gravity_small' in which:         # 화면용: 128², 간격 0.5, dt 1.0, 1.25 케플러 주기 전부
         tk = 2 * np.pi * 6.0 / np.sqrt(0.1 / 24)
         json.dump(self_gravity(0.5, 128, 1.0, 0.2, 375, 1.25 * tk, 10), open(os.path.join(OUT, 'self_gravity_small.json'), 'w'), indent=1)
+    if 'modes' in which:
+        json.dump(modes(), open(os.path.join(OUT, 'modes.json'), 'w'), indent=1)
     if 'gravity' in which:               # 원본 크기: 256², 간격 0.25, dt 0.1, 원본 바닥 상태 설정. 궤도는 처음 100 시간 단위만
         json.dump(self_gravity(0.25, 256, 0.1, 0.05, 1500, 100.0, 100), open(os.path.join(OUT, 'self_gravity.json'), 'w'), indent=1)
