@@ -8,6 +8,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'time-grid'))
 import relabel_test_1d as R
 import deflection_dynamics as D
+import numpy as np
+import self_gravity_slow as S
 
 OUT = os.path.join(HERE, '..', 'test', 'reference')
 
@@ -46,12 +48,78 @@ def deflection_2d(a, ng, qs):
                 gamma_rule=float(D.GAMMA_RULE), cases=rows)
 
 
+def slow_config(a, ng):
+    """self_gravity_slow 의 격자 전역값을 (a, ng) 로 다시 계산 (원본 식 그대로)"""
+    S.A, S.NG = a, ng
+    S.c = (np.arange(ng) - ng // 2) * a
+    S.X, S.Y = np.meshgrid(S.c, S.c, indexing='ij')
+    S.q = 2 * np.pi * np.fft.fftfreq(ng, d=a)
+    S.QX, S.QY = np.meshgrid(S.q, S.q, indexing='ij')
+    S.LAPQ = -(2 * (1 - np.cos(S.QX * a)) + 2 * (1 - np.cos(S.QY * a))) / a**2
+    S.P = 2 * ng
+    cp = (np.arange(S.P) - S.P // 2) * a
+    XP, YP = np.meshgrid(cp, cp, indexing='ij')
+    RP = np.sqrt(XP**2 + YP**2)
+    S.KER_Q = np.fft.rfft2(np.fft.ifftshift(np.where(RP > 0, 1 / np.maximum(RP, 1e-12), 2 * 1.7627 / a)))
+
+
+def slow_evolve(phis, T, dt, mutual, save_every):
+    """S.evolve 와 같은 진행 (원본은 그림 저장이 256² 에 묶여 있어 진행 부분만 옮김)"""
+    kin = np.exp(1j * dt * S.LAPQ / (2 * S.MU))
+    track = []
+    nst = int(T / dt)
+    for n in range(nst + 1):
+        pots = [S.potential(S.rho_of(p)) for p in phis]
+        tot = sum(pots)
+        if n % save_every == 0:
+            track.append(dict(n=n, centers=[[float(v) for v in S.width(p)[1:]] for p in phis]))
+        if n == nst:
+            break
+        new = []
+        for j, p in enumerate(phis):
+            V = tot if mutual else pots[j]
+            p = p * np.exp(-0.5j * dt * S.MU * V)
+            p = np.fft.ifft2(np.fft.fft2(p) * kin)
+            new.append(p)
+        phis = new
+        pots = [S.potential(S.rho_of(p)) for p in phis]
+        tot = sum(pots)
+        phis = [p * np.exp(-0.5j * dt * S.MU * (tot if mutual else pots[j])) for j, p in enumerate(phis)]
+    return track
+
+
+def self_gravity(a, ng, dt, dtau, gsteps, t_end, save_every):
+    """동역학 2-c 느린 극한: 바닥 상태와 두 덩어리 궤도 (서로 끌림 켬 / 끔)"""
+    slow_config(a, ng)
+    GM, r0 = 0.1, 6.0
+    M = GM / S.G
+    gs = S.ground_state(M, steps=gsteps, dtau=dtau)
+    w0, _, _ = S.width(gs)
+    phi0 = float(S.potential(S.rho_of(gs)).min())
+    v = float(np.sqrt(GM / (4 * r0)))
+    tk = 2 * np.pi * r0 / v
+    print(a, ng, 'ground', w0, phi0, flush=True)
+    out = dict(source='time-grid/self_gravity_slow.py', a=a, ng=ng, mu=S.MU, G=float(S.G), GM=GM, r0=r0, v=v, kepler_period=tk,
+               dt=dt, dtau=dtau, ground_steps=gsteps, ground_width=float(w0), ground_phi_min=phi0, t_end=t_end, runs={})
+    p1 = S.shift(gs, r0, 0, 0, v); p2 = S.shift(gs, -r0, 0, 0, -v)
+    for mutual in (True, False):
+        tr = slow_evolve([p1.copy(), p2.copy()], t_end, dt, mutual, save_every)
+        out['runs']['mutual' if mutual else 'off'] = tr
+        print(a, ng, mutual, tr[-1], flush=True)
+    return out
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    which = sys.argv[1:] or ['relabel', 'deflection_small', 'deflection']
+    which = sys.argv[1:] or ['relabel', 'deflection_small', 'deflection', 'gravity_small', 'gravity']
     if 'relabel' in which:
         json.dump(relabel_1d(), open(os.path.join(OUT, 'relabel_1d.json'), 'w'), indent=1)
     if 'deflection_small' in which:      # 화면용 줄인 격자 (같은 영역, 간격 3배)
         json.dump(deflection_2d(0.12, 256, [2.0, 4.0, 6.0]), open(os.path.join(OUT, 'deflection_2d_small.json'), 'w'), indent=1)
     if 'deflection' in which:            # 원본 크기 (문서의 결과와 같은 설정)
         json.dump(deflection_2d(0.04, 768, [2.0, 4.0, 8.0, 12.0]), open(os.path.join(OUT, 'deflection_2d.json'), 'w'), indent=1)
+    if 'gravity_small' in which:         # 화면용: 128², 간격 0.5, dt 1.0, 1.25 케플러 주기 전부
+        tk = 2 * np.pi * 6.0 / np.sqrt(0.1 / 24)
+        json.dump(self_gravity(0.5, 128, 1.0, 0.2, 375, 1.25 * tk, 10), open(os.path.join(OUT, 'self_gravity_small.json'), 'w'), indent=1)
+    if 'gravity' in which:               # 원본 크기: 256², 간격 0.25, dt 0.1, 원본 바닥 상태 설정. 궤도는 처음 100 시간 단위만
+        json.dump(self_gravity(0.25, 256, 0.1, 0.05, 1500, 100.0, 100), open(os.path.join(OUT, 'self_gravity.json'), 'w'), indent=1)

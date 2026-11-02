@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/deflection_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/orbit_screen.dart';
 import 'screens/relabel_screen.dart';
 
 void main() => runApp(const TimeGridApp());
@@ -23,6 +24,7 @@ class TimeGridApp extends StatelessWidget {
         '/': (_) => const HomeScreen(),
         '/relabel': (_) => const RelabelScreen(),
         '/deflection': (_) => const DeflectionScreen(),
+        '/orbit': (_) => const OrbitScreen(),
       },
     );
   }
